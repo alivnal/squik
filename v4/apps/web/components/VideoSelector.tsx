@@ -120,6 +120,16 @@ export default function VideoSelector({
   const [trimDurationSec, setTrimDurationSec] = useState<number | null>(null);
   const [rangeText, setRangeText] = useState(initialDraft?.rangeText ?? '');
   const [trimProbing, setTrimProbing] = useState(false);
+  // Every file is read when picked, the way each job reads it first anyway,
+  // so an unreadable one is named here instead of failing a job later.
+  const [checkingFile, setCheckingFile] = useState(false);
+  const [clipHealth, setClipHealth] = useState<Record<string, 'checking' | 'ok' | 'bad'>>({});
+  // Said aloud to screen readers only: tray moves and removals, and the trim
+  // status once typing pauses.
+  const [trayNotice, setTrayNotice] = useState('');
+  const pendingFocusRef = useRef<
+    { kind: 'move'; id: string; control: 'earlier' | 'later' } | { kind: 'remove'; index: number } | null
+  >(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const clipListRef = useRef<HTMLUListElement>(null);
   const ignoreClickRef = useRef(false);
@@ -136,39 +146,64 @@ export default function VideoSelector({
       const metadata = await probeVideoFile(file);
       setTrimDurationSec(metadata.duration);
     } catch {
-      setError(t('errors.trimProbeFailed'));
+      setError(t('errors.unreadableFile', { name: file.name }));
       setTrimVideo(null);
     } finally {
       setTrimProbing(false);
     }
   };
 
-  // A video put back from a draft still needs its length read; once, for the
-  // draft the card opened with.
+  const checkClips = (entries: ClipEntry[]) => {
+    for (const { id, file } of entries) {
+      setClipHealth((prev) => ({ ...prev, [id]: 'checking' }));
+      probeVideoFile(file).then(
+        () => setClipHealth((prev) => ({ ...prev, [id]: 'ok' })),
+        () => setClipHealth((prev) => ({ ...prev, [id]: 'bad' })),
+      );
+    }
+  };
+
+  // Files put back from a draft are read again: the trim video for its length,
+  // the merge clips so a bad one shows as soon as the card opens. Once, for
+  // the draft the card opened with.
   useEffect(() => {
     if (initialDraft?.trimVideo) void selectTrimVideo(initialDraft.trimVideo);
+    checkClips(clips);
   }, []);
 
   const addClips = (files: File[]) => {
     if (files.length === 0) return;
-    captureClipLayout();
-    setClips((prev) => {
-      const seen = new Set(prev.map((c) => c.id));
-      const next = [...prev];
-      for (const file of files) {
-        if (!isVideoFile(file)) continue;
-        const id = clipKey(file);
-        if (!seen.has(id)) {
-          seen.add(id);
-          next.push({ id, file });
-        }
+    const seen = new Set(clips.map((c) => c.id));
+    const added: ClipEntry[] = [];
+    for (const file of files) {
+      if (!isVideoFile(file)) continue;
+      const id = clipKey(file);
+      if (!seen.has(id)) {
+        seen.add(id);
+        added.push({ id, file });
       }
-      return next;
-    });
+    }
+    if (added.length === 0) return;
+    captureClipLayout();
+    setClips((prev) => [...prev, ...added]);
+    checkClips(added);
+  };
+
+  // Compress starts on pick, so the file is read first.
+  const checkThenCompress = async (file: File) => {
+    setCheckingFile(true);
+    try {
+      await probeVideoFile(file);
+      onVideoSelected(file);
+    } catch {
+      setError(t('errors.unreadableFile', { name: file.name }));
+    } finally {
+      setCheckingFile(false);
+    }
   };
 
   const pickFile = (file: File | undefined) => {
-    if (!file || disabled) return;
+    if (!file || disabled || checkingFile) return;
     if (!isVideoFile(file)) {
       setError(t('errors.invalidFile'));
       return;
@@ -178,7 +213,7 @@ export default function VideoSelector({
       void selectTrimVideo(file);
       return;
     }
-    onVideoSelected(file);
+    void checkThenCompress(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -253,19 +288,48 @@ export default function VideoSelector({
     addClips(valid);
   };
 
+  // Where focus goes once the tray has re-rendered: the moved clip's control
+  // (or its other arrow, if that one just hit the end), or after a removal
+  // the clip that took its place, else the one before, else the drop zone.
+  useEffect(() => {
+    const pending = pendingFocusRef.current;
+    if (!pending) return;
+    pendingFocusRef.current = null;
+    if (pending.kind === 'move') {
+      const tile = clipListRef.current?.querySelector<HTMLElement>(`[data-flip-id="${CSS.escape(pending.id)}"]`);
+      const controls = ['earlier', 'later'] as const;
+      const order = pending.control === 'earlier' ? controls : ([...controls].reverse() as Array<(typeof controls)[number]>);
+      for (const control of order) {
+        const button = tile?.querySelector<HTMLButtonElement>(`[data-control="${control}"]`);
+        if (button && !button.disabled) return button.focus();
+      }
+      return;
+    }
+    const tiles = clipListRef.current?.querySelectorAll<HTMLElement>('.merge-tile');
+    const target = tiles?.length
+      ? tiles[Math.min(pending.index, tiles.length - 1)]
+      : document.querySelector<HTMLElement>('[data-ui="video-drop-zone"]');
+    target?.focus();
+  }, [clipLayoutKey]);
+
   const moveClip = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= clips.length) return;
+    const clip = clips[index];
     captureClipLayout();
+    pendingFocusRef.current = { kind: 'move', id: clip.id, control: direction < 0 ? 'earlier' : 'later' };
     setClips((prev) => {
       const next = [...prev];
-      const target = index + direction;
-      if (target < 0 || target >= next.length) return prev;
       [next[index], next[target]] = [next[target], next[index]];
       return next;
     });
+    setTrayNotice(t('merge.moved', { name: clip.file.name, position: target + 1, count: clips.length }));
   };
 
   const removeClip = (index: number) => {
     captureClipLayout();
+    pendingFocusRef.current = { kind: 'remove', index };
+    setTrayNotice(t('merge.removed', { name: clips[index].file.name }));
     setClips((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -311,6 +375,9 @@ export default function VideoSelector({
     setError(null);
     onTrimAndCompress(trimVideo, deleteSegments, rangeText);
   };
+
+  const unreadableClip = clips.find((clip) => clipHealth[clip.id] === 'bad');
+  const clipsReady = clips.length >= 2 && clips.every((clip) => clipHealth[clip.id] === 'ok');
 
   const handleMerge = () => {
     if (clips.length < 2) {
@@ -364,6 +431,19 @@ export default function VideoSelector({
       tone: 'ready',
     };
   }
+
+  // The trim status reaches screen readers once typing pauses, not on every
+  // keystroke (half-typed times read as errors); a submit error goes at once.
+  const trimStatusText = mode === 'trim' && trimVideo ? (error ?? rangeStatus.text) : '';
+  useEffect(() => {
+    if (!trimStatusText) return;
+    if (error) {
+      setTrayNotice(error);
+      return;
+    }
+    const id = window.setTimeout(() => setTrayNotice(trimStatusText), 900);
+    return () => window.clearTimeout(id);
+  }, [trimStatusText, error]);
 
   return (
     <section className="tool-layout">
@@ -447,6 +527,7 @@ export default function VideoSelector({
                   id="trim-ranges"
                   value={rangeText}
                   aria-describedby="trim-ranges-hint"
+                  aria-invalid={rangeStatus.tone === 'error'}
                   disabled={disabled || trimProbing}
                   onChange={(e) => {
                     setRangeText(e.target.value);
@@ -491,7 +572,9 @@ export default function VideoSelector({
                 <li
                   key={clip.id}
                   data-flip-id={clip.id}
-                  className={`bento-tile merge-tile ${index === 0 ? 'is-lead' : ''}`}
+                  tabIndex={-1}
+                  aria-label={clip.file.name}
+                  className={`bento-tile merge-tile ${index === 0 ? 'is-lead' : ''} ${clipHealth[clip.id] === 'bad' ? 'is-unreadable' : ''}`}
                   style={{ animationDelay: `${Math.min(index, 6) * 45}ms` }}
                 >
                   <p className="merge-tile-name">
@@ -499,11 +582,18 @@ export default function VideoSelector({
                     <FileName name={clip.file.name} />
                   </p>
                   <div className="merge-tile-foot">
-                    <span className="merge-tile-size">{formatBytes(clip.file.size, 1)}</span>
+                    <span className="merge-tile-size">
+                      {clipHealth[clip.id] === 'bad'
+                        ? t('merge.unreadable')
+                        : clipHealth[clip.id] === 'checking'
+                          ? t('merge.checking')
+                          : formatBytes(clip.file.size, 1)}
+                    </span>
                     <div className="merge-tile-controls">
                       <button
                         type="button"
-                        aria-label={t('a11y.moveEarlier')}
+                        data-control="earlier"
+                        aria-label={t('a11y.moveEarlierClip', { name: clip.file.name })}
                         disabled={disabled || index === 0}
                         onClick={() => moveClip(index, -1)}
                         className="clip-control"
@@ -512,7 +602,8 @@ export default function VideoSelector({
                       </button>
                       <button
                         type="button"
-                        aria-label={t('a11y.moveLater')}
+                        data-control="later"
+                        aria-label={t('a11y.moveLaterClip', { name: clip.file.name })}
                         disabled={disabled || index === clips.length - 1}
                         onClick={() => moveClip(index, 1)}
                         className="clip-control"
@@ -521,7 +612,7 @@ export default function VideoSelector({
                       </button>
                       <button
                         type="button"
-                        aria-label={t('a11y.remove')}
+                        aria-label={t('a11y.removeClip', { name: clip.file.name })}
                         disabled={disabled}
                         onClick={() => removeClip(index)}
                         className="clip-control"
@@ -543,7 +634,8 @@ export default function VideoSelector({
             <div className="drop-zone-wrap">
               <button
                 type="button"
-                disabled={disabled}
+                disabled={disabled || checkingFile}
+                aria-busy={checkingFile}
                 data-ui="video-drop-zone"
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -563,7 +655,12 @@ export default function VideoSelector({
                 <span className="drop-zone-browse">
                   {mode === 'merge' ? t('landing.browseMultiple') : t('landing.browseSingle')}
                 </span>
-                <span className="drop-zone-formats">{t('landing.formats')}</span>
+                {/* The product's promise, on the first screen at every size:
+                    the limit and that nothing is uploaded. */}
+                <span className="drop-zone-promise">
+                  <MaterialIcon name="lock" size={14} />
+                  {t('landing.promise')}
+                </span>
               </button>
               {error && (
                 // Over the foot of the drop zone rather than below it, so the
@@ -582,7 +679,6 @@ export default function VideoSelector({
                   the card keeps its height. */}
               <p
                 id="trim-ranges-hint"
-                aria-live="polite"
                 className={`tray-summary ${error ? 'is-error' : rangeStatus.tone === 'hint' ? '' : `is-${rangeStatus.tone}`}`}
               >
                 {error ?? rangeStatus.text}
@@ -602,16 +698,18 @@ export default function VideoSelector({
 
           {mode === 'merge' && clips.length > 0 && (
             <div className="tray-footer">
-              <p aria-live="polite" className={`tray-summary ${error ? 'is-error' : ''}`}>
+              <p aria-live="polite" className={`tray-summary ${error || unreadableClip ? 'is-error' : ''}`}>
                 {error ??
-                  t('merge.summary', {
-                    count: clips.length,
-                    size: formatBytes(clips.reduce((sum, clip) => sum + clip.file.size, 0), 1),
-                  })}
+                  (unreadableClip
+                    ? t('errors.unreadableClip', { name: unreadableClip.file.name })
+                    : t('merge.summary', {
+                        count: clips.length,
+                        size: formatBytes(clips.reduce((sum, clip) => sum + clip.file.size, 0), 1),
+                      }))}
               </p>
               <button
                 type="button"
-                disabled={disabled || clips.length < 2}
+                disabled={disabled || !clipsReady}
                 onClick={handleMerge}
                 className="pixel-btn"
               >
@@ -619,6 +717,9 @@ export default function VideoSelector({
               </button>
             </div>
           )}
+          <p className="sr-only" aria-live="polite">
+            {trayNotice}
+          </p>
         </div>
       </div>
     </section>

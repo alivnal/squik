@@ -23,6 +23,11 @@ import { formatElapsed, type CompressionProgressSnapshot } from '@/lib/compress-
 
 export type CompressionPhase = 'merging' | 'trimming' | 'compressing';
 
+// Jobs shorter than this cancel at once; longer ones ask to confirm, and the
+// confirmation lapses after a few seconds.
+const CONFIRM_AFTER_MS = 5000;
+const CONFIRM_WINDOW_MS = 4000;
+
 interface CompressionStatusProps {
   filename: string;
   progressSnap: CompressionProgressSnapshot;
@@ -55,7 +60,21 @@ export default function CompressionStatus({
     return () => window.clearInterval(id);
   }, []);
 
+  // Past a few seconds of work, Cancel asks once more before throwing it away.
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  useEffect(() => {
+    if (!confirmingCancel) return;
+    const id = window.setTimeout(() => setConfirmingCancel(false), CONFIRM_WINDOW_MS);
+    return () => window.clearTimeout(id);
+  }, [confirmingCancel]);
+
   const elapsedMs = Date.now() - jobStartedAt;
+  const finished = progressSnap.progress >= 1;
+  const requestCancel = () => {
+    if (finished) return;
+    if (elapsedMs < CONFIRM_AFTER_MS || confirmingCancel) onCancel();
+    else setConfirmingCancel(true);
+  };
   const encodeElapsedMs = encodeStartedAt ? Date.now() - encodeStartedAt : null;
   const percentage = Math.min(100, Math.max(0, Math.round(progressSnap.progress * 100)));
 
@@ -75,7 +94,7 @@ export default function CompressionStatus({
   return (
     // The job's own diorama plays beside the panel while it runs, placed the
     // way the homepage hero is.
-    <section className="tool-layout job-layout">
+    <section className="tool-layout">
       <SquikHero scene={job} />
       <div className="scene-card">
         <ScreenPanel size="lg" className="z-10">
@@ -135,11 +154,12 @@ export default function CompressionStatus({
           <PanelFooter>
             <button
               type="button"
-              onClick={onCancel}
-              className="pixel-btn pixel-btn-secondary pixel-btn-block"
+              onClick={requestCancel}
+              disabled={finished}
+              className={`pixel-btn pixel-btn-secondary pixel-btn-block ${confirmingCancel ? 'is-confirming' : ''}`}
             >
               <MaterialIcon name="cancel" size={18} />
-              {t('status.cancel')}
+              {confirmingCancel ? t('status.cancelConfirm') : t('status.cancel')}
             </button>
           </PanelFooter>
         </ScreenPanel>

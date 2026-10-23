@@ -38,6 +38,8 @@
   --color-beaver-belly: #e4e4e7;
   --color-success: #027a48;
   --color-error: #d92d20;
+  /* Error text on gray fills (buttons, tiles), where #d92d20 drops under 4.5:1. */
+  --color-error-text: #b42318;
 
   --color-primary-700: #0e71fb;
   --color-primary-800: #0b5fd4;
@@ -103,6 +105,7 @@
     --color-beaver-nose: #f4f4f5;
     --color-success: #34d399;
     --color-error: #f87171;
+    --color-error-text: #f87171;
     --color-gray-50: #1a1a1e;
     --color-gray-100: #222228;
     --color-gray-200: #2e2e34;
@@ -128,6 +131,7 @@
   --color-beaver-nose: #f4f4f5;
   --color-success: #34d399;
   --color-error: #f87171;
+  --color-error-text: #f87171;
   --color-gray-50: #1a1a1e;
   --color-gray-100: #222228;
   --color-gray-200: #2e2e34;
@@ -152,6 +156,7 @@
   --color-beaver-nose: #18181b;
   --color-success: #027a48;
   --color-error: #d92d20;
+  --color-error-text: #b42318;
   --color-gray-50: #f9fafb;
   --color-gray-100: #f4f4f5;
   --color-gray-200: #e4e4e7;
@@ -470,6 +475,38 @@ body {
   outline-offset: 3px;
 }
 
+/* A clip tile takes focus only from script, after its neighbour is removed. */
+.merge-tile:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+main:focus {
+  outline: none;
+}
+
+/* Hidden until it has keyboard focus, then pinned top-left over the header. */
+.skip-link {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .drop-zone:active:not(:disabled) {
   transform: scale(0.99);
 }
@@ -491,13 +528,6 @@ body {
   min-height: clamp(38rem, calc(100svh - 17rem), 56rem);
   padding-bottom: 2rem;
   margin: auto;
-}
-
-/* A running job's panel needs less width than the tools, so the scene beside
-   it gets the room to show as large as the homepage one. */
-.job-layout {
-  grid-template-columns: minmax(17rem, 1.3fr) minmax(min(27rem, 100%), 0.7fr);
-  width: min(100%, 86rem);
 }
 
 /* First pixel dam design (DamEnvironment), kept unused for reference. */
@@ -647,9 +677,16 @@ body {
   translate: 0 var(--squik-card-shift, 0px);
 }
 
+/* The job, success and error panels take the tool card's column and full
+   width, so the card keeps its place from screen to screen and only the scene
+   moves around it. */
 .scene-card {
   width: 100%;
   min-width: 0;
+}
+
+.scene-card .app-panel {
+  max-width: none;
 }
 
 .pixel-water-glint {
@@ -802,9 +839,12 @@ h1[tabindex="-1"]:focus {
   transition: color 0.15s ease, background-color 0.15s ease;
 }
 
+/* The surface alone sits at 1.1:1 on the track; the accent edge (4.8:1 or
+   more in both themes) is what shows which tool is on. */
 .tool-tab[aria-pressed="true"] {
   background: var(--color-surface);
   color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
 }
 
 .tool-tab:hover:not(:disabled) {
@@ -857,7 +897,10 @@ h1[tabindex="-1"]:focus {
   }
 }
 
-.drop-zone-formats {
+.drop-zone-promise {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   margin-top: 0.25rem;
   color: var(--color-muted);
   font-size: var(--text-body-sm);
@@ -1173,6 +1216,21 @@ h1[tabindex="-1"]:focus {
   line-height: var(--text-body-sm--line-height);
   font-variant-numeric: tabular-nums;
   text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+/* A clip that can't be read: red edge, and its size slot says so. */
+.merge-tile.is-unreadable {
+  border-color: var(--color-error);
+}
+
+.merge-tile.is-unreadable .merge-tile-size {
+  color: var(--color-error-text);
+}
+
+/* Cancel's second ask, in the error colour so it reads as the destructive step. */
+.pixel-btn-secondary.is-confirming {
+  color: var(--color-error-text);
 }
 
 /* State shows in colour only, so the line doesn't change weight as you type. */
@@ -1237,13 +1295,14 @@ h1[tabindex="-1"]:focus {
   font-size: var(--text-body-sm);
   line-height: var(--text-body-sm--line-height);
   text-wrap: pretty;
+  overflow-wrap: anywhere;
 }
 
-/* Laid over the foot of the drop zone, where the browse and formats lines
+/* Laid over the foot of the drop zone, where the browse and promise lines
    step aside (keeping their space, so nothing moves); its tint is opaque,
    so the dashed border doesn't show through. */
 .drop-zone.has-error .drop-zone-browse,
-.drop-zone.has-error .drop-zone-formats {
+.drop-zone.has-error .drop-zone-promise {
   visibility: hidden;
 }
 

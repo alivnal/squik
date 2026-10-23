@@ -31,9 +31,8 @@
     "mergeSubtitleAfter": "Combine selected clips into one video.",
     "trimSubtitleAfter": "Choose what to remove, then keep the rest.",
     "dropAnywhere": "Drop your video to begin",
-    "browseMultiple": "or choose multiple clips",
-    "browseSingle": "or choose a file",
-    "formats": "MP4 · MOV · WebM · MKV",
+    "browseMultiple": "or choose several clips (MP4, MOV, WebM, MKV)",
+    "browseSingle": "or choose a file (MP4, MOV, WebM, MKV)",
     "privacyNote": "Your video never leaves this device.",
     "drop": {
       "compress": "Drop a video to squish",
@@ -44,7 +43,8 @@
       "compress": "Choose a video to squish",
       "merge": "Choose clips to merge",
       "trim": "Choose a video to trim"
-    }
+    },
+    "promise": "Under 200 MB · stays on this device"
   },
   "trim": {
     "pickVideoFirst": "Pick a video first.",
@@ -63,7 +63,11 @@
     "clips": "Clips to merge",
     "addMore": "Add clips",
     "summary_one": "{{count}} clip · {{size}}",
-    "summary_other": "{{count}} clips · {{size}}"
+    "summary_other": "{{count}} clips · {{size}}",
+    "unreadable": "Can't read",
+    "checking": "Checking…",
+    "moved": "{{name}} moved to position {{position}} of {{count}}",
+    "removed": "{{name}} removed"
   },
   "errors": {
     "invalidFile": "Please choose a supported video file (MP4, MOV, WebM, MKV).",
@@ -90,7 +94,10 @@
       "merge": "Merge failed",
       "trim": "Trim failed"
     },
-    "tooLargeToFit": "This video is too long or too large to fit under 200 MB. Try a shorter clip or a lower-resolution source."
+    "tooLargeToFit": "This video is too long or too large to fit under 200 MB. Try a shorter clip or a lower-resolution source.",
+    "unreadableFile": "{{name}} can't be read. It may be damaged or in a format that can't be opened here.",
+    "unreadableClip": "{{name}} can't be read. Remove it to merge the rest.",
+    "encoderDownloadFailed": "Couldn't download the encoder (~25 MB). Check your connection and try again."
   },
   "a11y": {
     "moveUp": "Move up",
@@ -104,7 +111,11 @@
     "moveLater": "Move later",
     "home": "Squik home",
     "lightMode": "Switch to light mode",
-    "darkMode": "Switch to dark mode"
+    "darkMode": "Switch to dark mode",
+    "moveEarlierClip": "Move earlier: {{name}}",
+    "moveLaterClip": "Move later: {{name}}",
+    "removeClip": "Remove: {{name}}",
+    "skipToTool": "Skip to the tool"
   },
   "status": {
     "mergingVideos": "Merging videos…",
@@ -118,7 +129,8 @@
     "keepWindowOpen": "Keep this window open — progress tracks each stage of the job.",
     "cancel": "Cancel",
     "clips_one": "{{count}} clip",
-    "clips_other": "{{count}} clips"
+    "clips_other": "{{count}} clips",
+    "cancelConfirm": "Yes, stop the job"
   },
   "phase": {
     "preparing": "Preparing video…",

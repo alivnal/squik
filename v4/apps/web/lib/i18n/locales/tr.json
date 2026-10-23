@@ -31,9 +31,8 @@
     "mergeSubtitleAfter": "Seçtiğin klipleri tek videoda birleştir.",
     "trimSubtitleAfter": "Çıkarmak istediğin bölümleri seç, gerisini koru.",
     "dropAnywhere": "Başlamak için videonu bırak",
-    "browseMultiple": "veya birden fazla klip seç",
-    "browseSingle": "veya dosya seç",
-    "formats": "MP4 · MOV · WebM · MKV",
+    "browseMultiple": "veya birden fazla klip seç (MP4, MOV, WebM, MKV)",
+    "browseSingle": "veya dosya seç (MP4, MOV, WebM, MKV)",
     "privacyNote": "Videon bu cihazdan hiç çıkmaz.",
     "drop": {
       "compress": "Sıkıştırmak için video bırak",
@@ -44,7 +43,8 @@
       "compress": "Sıkıştırmak için video seç",
       "merge": "Birleştirmek için klip seç",
       "trim": "Kırpmak için video seç"
-    }
+    },
+    "promise": "200 MB altı · cihazından çıkmaz"
   },
   "trim": {
     "pickVideoFirst": "Önce bir video seç.",
@@ -63,7 +63,11 @@
     "clips": "Birleştirilecek klipler",
     "addMore": "Klip ekle",
     "summary_one": "{{count}} klip · {{size}}",
-    "summary_other": "{{count}} klip · {{size}}"
+    "summary_other": "{{count}} klip · {{size}}",
+    "unreadable": "Okunamadı",
+    "checking": "Kontrol ediliyor…",
+    "moved": "{{name}}, {{count}} klip içinde {{position}}. sıraya taşındı",
+    "removed": "{{name}} kaldırıldı"
   },
   "errors": {
     "invalidFile": "Desteklenen bir video dosyası seç (MP4, MOV, WebM, MKV).",
@@ -88,7 +92,10 @@
       "merge": "Birleştirme başarısız",
       "trim": "Kırpma başarısız"
     },
-    "tooLargeToFit": "Bu video 200 MB altına sığmayacak kadar uzun ya da büyük. Daha kısa bir klip ya da daha düşük çözünürlüklü bir kaynak dene."
+    "tooLargeToFit": "Bu video 200 MB altına sığmayacak kadar uzun ya da büyük. Daha kısa bir klip ya da daha düşük çözünürlüklü bir kaynak dene.",
+    "unreadableFile": "{{name}} okunamadı. Dosya bozuk ya da burada açılamayan bir biçimde olabilir.",
+    "unreadableClip": "{{name}} okunamadı. Kalanları birleştirmek için onu kaldır.",
+    "encoderDownloadFailed": "Kodlayıcı (~25 MB) indirilemedi. Bağlantını kontrol edip tekrar dene."
   },
   "a11y": {
     "moveUp": "Yukarı taşı",
@@ -102,7 +109,11 @@
     "moveLater": "Sona al",
     "home": "Squik ana sayfa",
     "lightMode": "Açık temaya geç",
-    "darkMode": "Koyu temaya geç"
+    "darkMode": "Koyu temaya geç",
+    "moveEarlierClip": "Öne al: {{name}}",
+    "moveLaterClip": "Sona al: {{name}}",
+    "removeClip": "Kaldır: {{name}}",
+    "skipToTool": "Araca geç"
   },
   "status": {
     "mergingVideos": "Videolar birleştiriliyor…",
@@ -116,7 +127,8 @@
     "keepWindowOpen": "Bu pencereyi açık tut — ilerleme işin her aşamasını takip eder.",
     "cancel": "İptal et",
     "clips_one": "{{count}} klip",
-    "clips_other": "{{count}} klip"
+    "clips_other": "{{count}} klip",
+    "cancelConfirm": "Evet, işi durdur"
   },
   "phase": {
     "preparing": "Video hazırlanıyor…",

@@ -49,6 +49,9 @@ export default function SquishApp() {
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [progressSnap, setProgressSnap] = useState<CompressionProgressSnapshot>(INITIAL_SNAPSHOT);
   const [errorMessage, setErrorMessage] = useState('');
+  // False when the failure comes from the files themselves, so running the
+  // same job again cannot help.
+  const [retryHelps, setRetryHelps] = useState(true);
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
   const [result, setResult] = useState<WebCompressionResult | null>(null);
   const [wasmLoading, setWasmLoading] = useState(false);
@@ -101,6 +104,9 @@ export default function SquishApp() {
   // Back to the card with the job's files and ranges still in it: after a
   // cancel, or from the error screen to change them.
   const backToFiles = () => {
+    // A finished job holds on "Complete" for a moment before the success
+    // screen; a late Cancel then must not throw the result away.
+    if (status === AppStatus.COMPRESSING && result) return;
     invalidateCompressionSession();
     revokeOutputUrl();
     setDraft(draftFor(lastJobRef.current));
@@ -142,6 +148,11 @@ export default function SquishApp() {
     if (!message.toLowerCase().includes('cancel')) {
       setStatus(AppStatus.ERROR);
       setErrorMessage(message);
+      setRetryHelps(
+        !['errors.metadataReadFailed', 'errors.tooLargeToFit', 'errors.mergeMinTwo'].some(
+          (key) => t(key) === message,
+        ),
+      );
     } else {
       setDraft(draftFor(lastJobRef.current));
       setStatus(AppStatus.IDLE);
@@ -284,7 +295,13 @@ export default function SquishApp() {
     content = <CompressionSuccess result={result} job={jobKind} onReset={reset} />;
   } else if (status === AppStatus.ERROR) {
     content = (
-      <CompressionError message={errorMessage} job={jobKind} onRetry={retryLastJob} onChangeFiles={backToFiles} />
+      <CompressionError
+        message={errorMessage}
+        job={jobKind}
+        retryHelps={retryHelps}
+        onRetry={retryLastJob}
+        onChangeFiles={backToFiles}
+      />
     );
   }
 

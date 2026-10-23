@@ -90,7 +90,7 @@ export default function CompressionSuccess({ result, job = 'compress', onReset }
   return (
     // The finished job's diorama stays beside the panel, placed as it was while
     // the job ran.
-    <section className="tool-layout job-layout">
+    <section className="tool-layout">
       <SquikHero scene={job} />
       <div className="scene-card">
         <ScreenPanel size="lg" className="z-10">

@@ -178,7 +178,9 @@ export async function loadFFmpeg(onLoadProgress?: (ratio: number) => void): Prom
       ffmpegInstance = null;
       ffmpeg.terminate();
     }
-    throw error;
+    // Both the local bundle and the CDN failed, which on a first visit means
+    // the connection; the browser's "Failed to fetch" says nothing useful.
+    throw new Error(t('errors.encoderDownloadFailed'), { cause: error });
   }
 }
 
