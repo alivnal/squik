@@ -95,7 +95,8 @@
     "tooLargeToFit": "Bu video 200 MB altına sığmayacak kadar uzun ya da büyük. Daha kısa bir klip ya da daha düşük çözünürlüklü bir kaynak dene.",
     "unreadableFile": "{{name}} okunamadı. Dosya bozuk ya da burada açılamayan bir biçimde olabilir.",
     "unreadableClip": "{{name}} okunamadı. Kalanları birleştirmek için onu kaldır.",
-    "encoderDownloadFailed": "Kodlayıcı (~25 MB) indirilemedi. Bağlantını kontrol edip tekrar dene."
+    "encoderDownloadFailed": "Kodlayıcı (~25 MB) indirilemedi. Bağlantını kontrol edip tekrar dene.",
+    "trimLengthUnknown": "{{name}} için süre okunamadı, bu yüzden burada kırpılamıyor. Sıkıştırma ve birleştirme bu dosyayla yine çalışır."
   },
   "a11y": {
     "moveUp": "Yukarı taşı",
@@ -128,7 +129,9 @@
     "cancel": "İptal et",
     "clips_one": "{{count}} klip",
     "clips_other": "{{count}} klip",
-    "cancelConfirm": "Evet, işi durdur"
+    "cancelConfirm": "Evet, işi durdur",
+    "loadingEncoderPercent": "Kodlayıcı yükleniyor… %{{percent}}",
+    "encoderStalled": "Kodlayıcı indirmesi bir süredir ilerlemiyor. Bağlantı yavaş olabilir; kendi kendine devam eder."
   },
   "phase": {
     "preparing": "Video hazırlanıyor…",

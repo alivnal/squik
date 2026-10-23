@@ -144,6 +144,12 @@ export default function VideoSelector({
 
     try {
       const metadata = await probeVideoFile(file);
+      if (!(metadata.duration > 0)) {
+        // Without a length, no range can be checked against the end.
+        setError(t('errors.trimLengthUnknown', { name: file.name }));
+        setTrimVideo(null);
+        return;
+      }
       setTrimDurationSec(metadata.duration);
     } catch {
       setError(t('errors.unreadableFile', { name: file.name }));

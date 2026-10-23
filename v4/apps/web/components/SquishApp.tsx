@@ -55,6 +55,8 @@ export default function SquishApp() {
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
   const [result, setResult] = useState<WebCompressionResult | null>(null);
   const [wasmLoading, setWasmLoading] = useState(false);
+  // How much of the encoder (~25 MB, first visit only) has downloaded, 0 to 1.
+  const [encoderLoaded, setEncoderLoaded] = useState(0);
   const [jobKind, setJobKind] = useState<JobKind>('compress');
   // Files and ranges the card opens with: the cancelled job's, else none.
   const [draft, setDraft] = useState<SelectorDraft | undefined>(undefined);
@@ -118,6 +120,14 @@ export default function SquishApp() {
     setWasmLoading(false);
   };
 
+  // The encoder reports its download as it goes; loading ends only at 1, not
+  // at the first report.
+  const handleEncoderLoad = (session: number, ratio: number) => {
+    if (session !== compressionSessionRef.current) return;
+    setEncoderLoaded(ratio);
+    setWasmLoading(ratio < 1);
+  };
+
   const handleProgress = (session: number, snap: CompressionProgressSnapshot) => {
     if (session !== compressionSessionRef.current) return;
     if (snap.encodeElapsedMs !== null && encodeStartedAtRef.current === null) {
@@ -174,14 +184,12 @@ export default function SquishApp() {
     setErrorMessage('');
     setResult(null);
     setWasmLoading(true);
+    setEncoderLoaded(0);
     setMetadata({ name: file.name, size: file.size });
 
     try {
       const compression = await compressVideoWasm(file, {
-        onLoadProgress: () => {
-          if (session !== compressionSessionRef.current) return;
-          setWasmLoading(false);
-        },
+        onLoadProgress: (ratio) => handleEncoderLoad(session, ratio),
         onProgress: (snap) => handleProgress(session, snap),
       });
       await finishJob(session, compression);
@@ -202,6 +210,7 @@ export default function SquishApp() {
     setErrorMessage('');
     setResult(null);
     setWasmLoading(true);
+    setEncoderLoaded(0);
     setMetadata({
       name: t('status.clips', { count: files.length }),
       size: totalSize,
@@ -209,10 +218,7 @@ export default function SquishApp() {
 
     try {
       const compression = await mergeAndCompressVideosWasm(files, {
-        onLoadProgress: () => {
-          if (session !== compressionSessionRef.current) return;
-          setWasmLoading(false);
-        },
+        onLoadProgress: (ratio) => handleEncoderLoad(session, ratio),
         onProgress: (snap) => handleProgress(session, snap),
       });
       await finishJob(session, compression);
@@ -231,14 +237,12 @@ export default function SquishApp() {
     setErrorMessage('');
     setResult(null);
     setWasmLoading(true);
+    setEncoderLoaded(0);
     setMetadata({ name: file.name, size: file.size });
 
     try {
       const compression = await trimAndCompressVideosWasm(file, deleteSegments, {
-        onLoadProgress: () => {
-          if (session !== compressionSessionRef.current) return;
-          setWasmLoading(false);
-        },
+        onLoadProgress: (ratio) => handleEncoderLoad(session, ratio),
         onProgress: (snap) => handleProgress(session, snap),
       });
       await finishJob(session, compression);
@@ -286,6 +290,7 @@ export default function SquishApp() {
         encodeStartedAt={encodeStartedAtRef.current}
         originalSize={metadata.size}
         wasmLoading={wasmLoading}
+        encoderLoaded={encoderLoaded}
         phase={jobPhase}
         job={jobKind}
         onCancel={backToFiles}

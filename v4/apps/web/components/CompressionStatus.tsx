@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MAX_OUTPUT_BYTES, formatBytes } from '@/lib/squish-core';
 import FileName from './FileName';
@@ -27,6 +27,8 @@ export type CompressionPhase = 'merging' | 'trimming' | 'compressing';
 // confirmation lapses after a few seconds.
 const CONFIRM_AFTER_MS = 5000;
 const CONFIRM_WINDOW_MS = 4000;
+// An encoder download that has not moved for this long is called out.
+const STALL_AFTER_MS = 15000;
 
 interface CompressionStatusProps {
   filename: string;
@@ -35,6 +37,8 @@ interface CompressionStatusProps {
   encodeStartedAt: number | null;
   originalSize?: number;
   wasmLoading?: boolean;
+  /** Share of the encoder download done, 0 to 1, while wasmLoading. */
+  encoderLoaded?: number;
   phase?: CompressionPhase;
   /** The running job, which picks the diorama shown beside the panel. */
   job?: 'compress' | 'merge' | 'trim';
@@ -48,6 +52,7 @@ export default function CompressionStatus({
   encodeStartedAt,
   originalSize,
   wasmLoading = false,
+  encoderLoaded = 0,
   phase = 'compressing',
   job = 'compress',
   onCancel,
@@ -68,6 +73,14 @@ export default function CompressionStatus({
     return () => window.clearTimeout(id);
   }, [confirmingCancel]);
 
+  // When the encoder download last moved, to tell a slow connection from a
+  // working one.
+  const downloadMovedAt = useRef(Date.now());
+  useEffect(() => {
+    downloadMovedAt.current = Date.now();
+  }, [encoderLoaded]);
+  const downloadStalled = wasmLoading && Date.now() - downloadMovedAt.current > STALL_AFTER_MS;
+
   const elapsedMs = Date.now() - jobStartedAt;
   const finished = progressSnap.progress >= 1;
   const requestCancel = () => {
@@ -78,18 +91,24 @@ export default function CompressionStatus({
   const encodeElapsedMs = encodeStartedAt ? Date.now() - encodeStartedAt : null;
   const percentage = Math.min(100, Math.max(0, Math.round(progressSnap.progress * 100)));
 
-  const phaseTitle =
-    phase === 'merging'
+  // The encoder download comes first: until it lands, no merging or trimming
+  // is happening, whatever the job. The name is what screen readers hear; the
+  // visible line adds the download percent, which would be noise read aloud.
+  const phaseName = wasmLoading
+    ? t('status.loadingEncoder')
+    : phase === 'merging'
       ? t('status.mergingVideos')
       : phase === 'trimming'
         ? t('status.trimmingVideo')
-        : wasmLoading
-        ? t('status.loadingEncoder')
         : progressSnap.progress >= 1
           ? t('phase.complete')
           : progressSnap.phase
             ? t(`phase.${progressSnap.phase}`, { defaultValue: progressSnap.phaseLabel })
             : progressSnap.phaseLabel;
+  const phaseTitle =
+    wasmLoading && encoderLoaded > 0
+      ? t('status.loadingEncoderPercent', { percent: Math.floor(encoderLoaded * 100) })
+      : phaseName;
 
   return (
     // The job's own diorama plays beside the panel while it runs, placed the
@@ -121,15 +140,18 @@ export default function CompressionStatus({
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={percentage}
-              aria-label={phaseTitle}
+              aria-label={phaseName}
               className="w-full"
             >
               <BeaverCompressionScene progress={progressSnap.progress} percentage={percentage} />
             </div>
 
             <div className="status-details mt-space-6 text-center w-full">
-              <p className="text-body font-semibold text-accent" aria-live="polite">
+              <p className="text-body font-semibold text-accent" aria-hidden="true">
                 {phaseTitle}
+              </p>
+              <p className="sr-only" aria-live="polite">
+                {phaseName}
               </p>
 
               <div className="status-times mt-space-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-body-sm text-muted tabular-nums">
@@ -146,7 +168,11 @@ export default function CompressionStatus({
               </div>
 
               <p className="status-note text-body-sm text-muted text-pretty mt-space-2 max-w-sm mx-auto">
-                {wasmLoading ? t('status.wasmHint') : t('status.keepTabOpen')}
+                {downloadStalled
+                  ? t('status.encoderStalled')
+                  : wasmLoading
+                    ? t('status.wasmHint')
+                    : t('status.keepTabOpen')}
               </p>
             </div>
           </PanelBody>

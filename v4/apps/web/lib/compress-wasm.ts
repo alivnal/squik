@@ -87,6 +87,8 @@ function scaleProgress(
   };
 }
 
+const LENGTH_SCAN_TIMEOUT_MS = 4000;
+
 export async function probeVideoFile(file: File): Promise<VideoProbeMetadata> {
   const objectUrl = URL.createObjectURL(file);
   try {
@@ -94,12 +96,24 @@ export async function probeVideoFile(file: File): Promise<VideoProbeMetadata> {
       (resolve, reject) => {
         const video = document.createElement('video');
         video.preload = 'metadata';
-        video.onloadedmetadata = () => {
+        const done = (duration: number) =>
           resolve({
-            duration: Number.isFinite(video.duration) ? video.duration : 0,
+            duration,
             width: video.videoWidth || 1920,
             height: video.videoHeight || 1080,
           });
+        video.onloadedmetadata = () => {
+          if (Number.isFinite(video.duration)) return done(video.duration);
+          // Browser and screen recordings (webm) often store no length, so the
+          // browser reports Infinity. Seeking far past the end makes it scan
+          // the file and report the real length; 0 means it never did.
+          const giveUp = window.setTimeout(() => done(0), LENGTH_SCAN_TIMEOUT_MS);
+          video.ondurationchange = () => {
+            if (!Number.isFinite(video.duration)) return;
+            window.clearTimeout(giveUp);
+            done(video.duration);
+          };
+          video.currentTime = Number.MAX_SAFE_INTEGER;
         };
         video.onerror = () =>
           reject(new Error(t('errors.metadataReadFailed')));
@@ -492,7 +506,7 @@ async function compressFileWithFfmpeg(
   jobProgress.enterPhase('loading', 0);
   const ffmpeg = await loadFFmpeg((ratio) => {
     jobProgress.update(ratio);
-    if (ratio >= 1) onLoadProgress?.(1);
+    onLoadProgress?.(ratio);
   });
   if (isCancelled(session)) throw new CompressionCancelledError();
   jobProgress.enterPhase('loading', 1);
@@ -711,7 +725,7 @@ export async function trimAndCompressVideosWasm(
       elapsedMs: Date.now() - trimStarted,
       encodeElapsedMs: null,
     });
-    if (ratio >= 1) onLoadProgress?.(1);
+    onLoadProgress?.(ratio);
   });
   if (isCancelled(session)) throw new CompressionCancelledError();
 
