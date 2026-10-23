@@ -53,9 +53,9 @@ export default function BeaverCompressionScene({ progress, percentage }: BeaverC
         </div>
       </div>
 
-      <p className="text-[clamp(1.75rem,5vw,2.25rem)] leading-none text-ink tracking-wide">
+      <p className="font-pixel text-figure leading-none tabular-nums text-ink">
         {percentage}
-        <span className="text-headline-sm text-muted">%</span>
+        <span className="text-title text-muted">%</span>
       </p>
     </div>
   );

@@ -20,6 +20,7 @@ import {
 import { probeVideoFile } from '@/lib/compress-wasm';
 import { useFlipList } from '@/hooks/useFlipList';
 import CompressOIcon from './CompressOIcon';
+import FileName from './FileName';
 import MaterialIcon from './MaterialIcon';
 import PanelMascot from './mascot/PanelMascot';
 import SquikHero from './SquikHero';
@@ -420,7 +421,9 @@ export default function VideoSelector({
             >
               <div className="bento-tile trim-file">
                 <MaterialIcon name="movie" size={20} className="text-accent shrink-0" />
-                <p className="trim-file-name" title={trimVideo.name}>{trimVideo.name}</p>
+                <p className="trim-file-name">
+                  <FileName name={trimVideo.name} />
+                </p>
                 <button
                   type="button"
                   disabled={disabled || trimProbing}
@@ -491,9 +494,9 @@ export default function VideoSelector({
                   className={`bento-tile merge-tile ${index === 0 ? 'is-lead' : ''}`}
                   style={{ animationDelay: `${Math.min(index, 6) * 45}ms` }}
                 >
-                  <p className="merge-tile-name" title={clip.file.name}>
+                  <p className="merge-tile-name">
                     <span className="merge-tile-order">{String(index + 1).padStart(2, '0')}</span>
-                    <span className="truncate">{clip.file.name}</span>
+                    <FileName name={clip.file.name} />
                   </p>
                   <div className="merge-tile-foot">
                     <span className="merge-tile-size">{formatBytes(clip.file.size, 1)}</span>

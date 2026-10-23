@@ -1,9 +1,18 @@
 @import "tailwindcss";
 @import "../components/iso/iso.css";
+/* Bundled, not fetched: the desktop app works offline and must render the
+   same on macOS and Windows. Rubik loads only the scripts a page uses
+   (latin and latin-ext for English and Turkish); Silkscreen is latin only,
+   since it sets just the wordmark and the progress figure. */
+@import "@fontsource-variable/rubik";
+@import "@fontsource/silkscreen/latin-400.css";
+@import "@fontsource/silkscreen/latin-700.css";
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Rubik's soft corners for every word of the interface; Silkscreen, a
+     pixel face, for the two places that speak in the diorama's voice. */
+  --font-sans: "Rubik Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-pixel: "Silkscreen", ui-monospace, monospace;
 
   /* Light mode palette */
   --color-canvas: #f9fafb;
@@ -60,18 +69,20 @@
   --spacing-space-8: 32px;
   --spacing-space-12: 48px;
 
-  --text-display-sm: 36px;
-  --text-display-sm--line-height: 44px;
-  --text-headline-sm: 20px;
-  --text-headline-sm--line-height: 30px;
-  --text-headline-lg: 30px;
-  --text-headline-lg--line-height: 38px;
-  --text-body-md: 16px;
-  --text-body-md--line-height: 24px;
+  /* Type roles. Weights are 400, 600 and 700 only. The pixel figure sits on
+     Silkscreen's 8px grid (40px = 5 cells), so its pixels stay square. */
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
   --text-body-sm: 14px;
   --text-body-sm--line-height: 20px;
-  --text-label-md: 13px;
-  --text-label-md--line-height: 20px;
+  --text-body: 16px;
+  --text-body--line-height: 24px;
+  --text-title: 20px;
+  --text-title--line-height: 28px;
+  --text-display: 28px;
+  --text-display--line-height: 34px;
+  --text-figure: 40px;
+  --text-figure--line-height: 40px;
 }
 
 /* ── Dark mode token overrides ─────────────────────────────────────── */
@@ -348,12 +359,13 @@ body {
   flex: none;
 }
 
+/* The wordmark in the pixel face, at a multiple of its 8px grid. */
 .squik-brand-name {
   color: var(--color-ink);
-  font-size: 1.75rem;
-  font-weight: 800;
+  font-family: var(--font-pixel);
+  font-size: 2rem;
+  font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.07em;
 }
 
 .squik-brand-compact .squik-brand-mark {
@@ -412,7 +424,7 @@ body {
 .language-picker-btn.is-active {
   color: var(--color-ink);
   background-color: var(--color-accent-tint);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .app-inset {
@@ -486,10 +498,6 @@ body {
 .job-layout {
   grid-template-columns: minmax(17rem, 1.3fr) minmax(min(27rem, 100%), 0.7fr);
   width: min(100%, 86rem);
-}
-
-.tool-intro {
-  max-width: 34rem;
 }
 
 /* First pixel dam design (DamEnvironment), kept unused for reference. */
@@ -685,40 +693,6 @@ body {
   }
 }
 
-.tool-intro h1 {
-  max-width: 9em;
-  margin: 0;
-  color: var(--color-ink);
-  font-size: clamp(3rem, 5.4vw, 5rem);
-  font-weight: 680;
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-  text-wrap: balance;
-}
-
-.tool-intro > p {
-  max-width: 34ch;
-  margin: 1.5rem 0 0;
-  color: var(--color-muted);
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
-  line-height: 1.5;
-}
-
-.tool-local-note {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-top: 2rem;
-  color: var(--color-ink);
-  font-size: 0.9375rem;
-  font-weight: 550;
-}
-
-.tool-local-note svg {
-  flex: none;
-  color: var(--color-accent);
-}
-
 .tool-ui {
   width: 100%;
   min-width: 0;
@@ -770,9 +744,6 @@ h1[tabindex="-1"]:focus {
 .squik-brand-mark,
 .squik-brand-name,
 .app-header-controls,
-.tool-intro h1,
-.tool-intro > p,
-.tool-local-note,
 .tool-ui,
 .tool-tab,
 .drop-zone,
@@ -782,18 +753,6 @@ h1[tabindex="-1"]:focus {
 
 .app-header-controls {
   animation-delay: 70ms;
-}
-
-.tool-intro h1 {
-  animation-delay: 120ms;
-}
-
-.tool-intro > p {
-  animation-delay: 190ms;
-}
-
-.tool-local-note {
-  animation-delay: 250ms;
 }
 
 .tool-ui {
@@ -837,7 +796,7 @@ h1[tabindex="-1"]:focus {
   background: transparent;
   color: var(--color-muted);
   font: inherit;
-  font-size: 0.9375rem;
+  font-size: var(--text-body-sm);
   font-weight: 600;
   cursor: pointer;
   transition: color 0.15s ease, background-color 0.15s ease;
@@ -872,13 +831,15 @@ h1[tabindex="-1"]:focus {
 }
 
 .drop-zone-title {
-  font-size: 1.125rem;
-  font-weight: 650;
+  font-size: var(--text-title);
+  font-weight: 600;
+  line-height: var(--text-title--line-height);
+  text-wrap: balance;
 }
 
 .drop-zone-browse {
   color: var(--color-muted);
-  font-size: 0.9375rem;
+  font-size: var(--text-body-sm);
 }
 
 .drop-zone-title-touch {
@@ -899,7 +860,7 @@ h1[tabindex="-1"]:focus {
 .drop-zone-formats {
   margin-top: 0.25rem;
   color: var(--color-muted);
-  font-size: 0.875rem;
+  font-size: var(--text-body-sm);
 }
 
 .drop-overlay {
@@ -909,7 +870,7 @@ h1[tabindex="-1"]:focus {
   gap: 1rem;
   color: var(--color-accent);
   font-size: 1.25rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .drop-overlay p {
@@ -924,8 +885,8 @@ h1[tabindex="-1"]:focus {
   background: transparent;
   color: var(--color-accent);
   font: inherit;
-  font-size: 0.875rem;
-  font-weight: 650;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -987,19 +948,15 @@ h1[tabindex="-1"]:focus {
   gap: 0.5rem;
   margin: 0;
   color: var(--color-ink);
-  font-size: 0.875rem;
+  font-size: var(--text-body-sm);
   font-weight: 600;
-}
-
-.merge-tile.is-lead .merge-tile-name {
-  font-size: 0.9375rem;
 }
 
 .merge-tile-order {
   flex: none;
   color: var(--color-accent);
-  font-size: 0.75rem;
-  font-weight: 750;
+  font-size: var(--text-caption);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
 }
@@ -1014,7 +971,8 @@ h1[tabindex="-1"]:focus {
 .merge-tile-size {
   overflow: hidden;
   color: var(--color-muted);
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1048,8 +1006,8 @@ h1[tabindex="-1"]:focus {
   background: var(--color-canvas);
   color: var(--color-muted);
   font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 650;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
   cursor: pointer;
   transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
@@ -1110,15 +1068,33 @@ h1[tabindex="-1"]:focus {
 }
 
 .trim-file-name {
+  display: flex;
   overflow: hidden;
   min-width: 0;
   flex: 1;
   margin: 0;
   color: var(--color-ink);
-  font-size: 0.9375rem;
+  font-size: var(--text-body-sm);
   font-weight: 600;
-  text-overflow: ellipsis;
+}
+
+/* FileName: the head gives way with an ellipsis, the tail (last characters
+   and extension) always shows. */
+.file-name {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
   white-space: nowrap;
+}
+
+.file-name-head {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+.file-name-tail {
+  flex: none;
 }
 
 .trim-length {
@@ -1130,15 +1106,15 @@ h1[tabindex="-1"]:focus {
 
 .trim-length-value {
   color: var(--color-ink);
-  font-size: 1.125rem;
-  font-weight: 700;
+  font-size: var(--text-title);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .trim-caption {
   color: var(--color-muted);
-  font-size: 0.75rem;
-  font-weight: 650;
+  font-size: var(--text-caption);
+  font-weight: 600;
 }
 
 .trim-ranges {
@@ -1193,18 +1169,19 @@ h1[tabindex="-1"]:focus {
 .tray-summary {
   margin: 0;
   color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.35;
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
+  font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
 }
 
+/* State shows in colour only, so the line doesn't change weight as you type. */
 .tray-summary.is-ready {
   color: var(--color-accent);
-  font-weight: 600;
 }
 
 .tray-summary.is-error {
   color: var(--color-error);
-  font-weight: 600;
 }
 
 /* The whole video; the sections that go sit on it in the error colour. */
@@ -1254,8 +1231,12 @@ h1[tabindex="-1"]:focus {
   padding: 0.875rem;
   border-radius: 6px;
   background: color-mix(in srgb, var(--color-error) 12%, var(--color-surface));
-  color: var(--color-error);
-  font-size: 0.9375rem;
+  /* Ink on the red tint: the tint and mascot say "error" and the text stays
+     readable (red on its own tint fell to 4:1). */
+  color: var(--color-ink);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
+  text-wrap: pretty;
 }
 
 /* Laid over the foot of the drop zone, where the browse and formats lines
@@ -1298,15 +1279,20 @@ h1[tabindex="-1"]:focus {
 }
 
 .panel-stat-label {
-  font-size: var(--text-label-md);
-  line-height: var(--text-label-md--line-height);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
   color: var(--color-muted);
   margin-bottom: 0.25rem;
 }
 
-.panel-stat-value {
-  font-weight: 400;
-  color: var(--color-ink);
+/* Layered, so a value's text-success or text-accent wins over the ink
+   default; unlayered, this rule overrode them and every value stayed ink. */
+@layer components {
+  .panel-stat-value {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+  }
 }
 
 .progress-ring-circle {
@@ -1318,7 +1304,7 @@ h1[tabindex="-1"]:focus {
 .pixel-btn {
   color: var(--color-on-accent);
   background: var(--color-accent);
-  font-weight: 650;
+  font-weight: 600;
   font-size: 1rem;
   line-height: 1.25rem;
   min-height: 2.75rem;
@@ -1585,11 +1571,6 @@ h1[tabindex="-1"]:focus {
     grid-column: 1;
     grid-row: 2;
   }
-
-  .tool-intro h1 {
-    max-width: 12ch;
-    font-size: clamp(2.75rem, 6.4vw, 4rem);
-  }
 }
 
 @media (max-width: 760px) {
@@ -1616,23 +1597,6 @@ h1[tabindex="-1"]:focus {
     transform: none;
   }
 
-  .tool-intro {
-    max-width: 36rem;
-  }
-
-  .tool-intro h1 {
-    max-width: 12ch;
-    font-size: clamp(2.75rem, 10vw, 4rem);
-  }
-
-  .tool-intro > p {
-    margin-top: 1rem;
-  }
-
-  .tool-local-note {
-    margin-top: 1.125rem;
-  }
-
   .tool-ui {
     padding: 1rem;
   }
@@ -1655,6 +1619,14 @@ h1[tabindex="-1"]:focus {
   }
 }
 
+/* Narrow phones: one grid step down, so the wordmark clears the header
+   controls; the 400px block below takes it one more. */
+@media (max-width: 520px) {
+  .squik-brand-name {
+    font-size: 1.5rem;
+  }
+}
+
 @media (max-width: 400px) {
   .app-header {
     width: calc(100% - 1.5rem);
@@ -1666,7 +1638,7 @@ h1[tabindex="-1"]:focus {
   }
 
   .squik-brand-name {
-    font-size: 1.375rem;
+    font-size: 1rem;
   }
 
   .app-header-controls {
@@ -1685,7 +1657,6 @@ h1[tabindex="-1"]:focus {
   /* Three tab labels fit side by side on the narrowest phones. */
   .tool-tab {
     padding-inline: 0.25rem;
-    font-size: 0.875rem;
   }
 }
 
@@ -1702,9 +1673,6 @@ h1[tabindex="-1"]:focus {
   .squik-brand-mark,
   .squik-brand-name,
   .app-header-controls,
-  .tool-intro h1,
-  .tool-intro > p,
-  .tool-local-note,
   .tool-ui,
   .tool-tab,
   .drop-zone,

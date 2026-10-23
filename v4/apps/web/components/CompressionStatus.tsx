@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MAX_OUTPUT_BYTES, formatBytes } from '@/lib/squish-core';
+import FileName from './FileName';
 import MaterialIcon from './MaterialIcon';
 import BeaverCompressionScene from './mascot/BeaverCompressionScene';
 import SquikHero from './SquikHero';
@@ -79,9 +80,9 @@ export default function CompressionStatus({
       <div className="scene-card">
         <ScreenPanel size="lg" className="z-10">
           <PanelHeader>
-            <h1 tabIndex={-1} className="flex items-center justify-center gap-2 text-headline-sm text-ink">
+            <h1 tabIndex={-1} className="flex items-center justify-center gap-2 text-title font-semibold text-ink">
               <MaterialIcon name="movie" filled className="text-accent shrink-0" size={20} />
-              <span className="truncate max-w-[min(100%,260px)]">{filename}</span>
+              <FileName name={filename} className="max-w-[min(100%,260px)]" />
             </h1>
             <p className="mt-space-1 text-body-sm leading-5 text-muted">
               {/* The 200 MB target only means something when the source is over it. */}
@@ -108,11 +109,11 @@ export default function CompressionStatus({
             </div>
 
             <div className="status-details mt-space-6 text-center w-full">
-              <p className="text-headline-sm leading-[30px] text-accent" aria-live="polite">
+              <p className="text-body font-semibold text-accent" aria-live="polite">
                 {phaseTitle}
               </p>
 
-              <div className="status-times mt-space-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-body-sm text-muted">
+              <div className="status-times mt-space-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-body-sm text-muted tabular-nums">
                 <span className="inline-flex items-center gap-1">
                   <MaterialIcon name="timer" size={16} />
                   {t('status.elapsed', { time: formatElapsed(elapsedMs) })}
@@ -125,7 +126,7 @@ export default function CompressionStatus({
                 )}
               </div>
 
-              <p className="status-note text-body-sm leading-5 text-muted mt-space-2 max-w-sm mx-auto">
+              <p className="status-note text-body-sm text-muted text-pretty mt-space-2 max-w-sm mx-auto">
                 {wasmLoading ? t('status.wasmHint') : t('status.keepTabOpen')}
               </p>
             </div>

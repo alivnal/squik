@@ -99,12 +99,12 @@ export default function CompressionSuccess({ result, job = 'compress', onReset }
               <PanelMascot variant="confetti" size="xl" />
             </div>
 
-            <h1 tabIndex={-1} className="text-[clamp(1.375rem,4vw,1.875rem)] leading-tight text-ink mb-space-2">
+            <h1 tabIndex={-1} className="text-display font-semibold tracking-[-0.01em] text-balance text-ink mb-space-2">
               {t(`success.title.${outcome}.before`)}{' '}
               <span className="text-success">{t(`success.title.${outcome}.accent`)}</span>
               {t(`success.title.${outcome}.after`)}
             </h1>
-            <p className="success-description text-body-sm leading-5 text-muted mb-space-6 max-w-md mx-auto">
+            <p className="success-description text-body-sm text-muted text-pretty mb-space-6 max-w-md mx-auto">
               {description}
             </p>
 
@@ -112,12 +112,12 @@ export default function CompressionSuccess({ result, job = 'compress', onReset }
               {stats.map((stat) => (
                 <div key={stat.label} className="panel-stat success-stat">
                   <span className="panel-stat-label">{stat.label}</span>
-                  <span className={`panel-stat-value text-headline-sm ${stat.className ?? ''}`}>{stat.value}</span>
+                  <span className={`panel-stat-value text-title ${stat.className ?? ''}`}>{stat.value}</span>
                 </div>
               ))}
             </div>
 
-            <p className="mt-space-4 text-body-sm leading-5 text-muted break-all px-1">
+            <p className="mt-space-4 text-body-sm text-muted [overflow-wrap:anywhere] px-1">
               {save.status === 'saved' ? save.path : result.filename}
             </p>
 
