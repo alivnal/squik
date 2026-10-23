@@ -546,7 +546,7 @@ export default function VideoSelector({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={handleZoneClick}
-                className={`drop-zone ${isDragActive ? 'is-dragging' : ''}`}
+                className={`drop-zone ${isDragActive ? 'is-dragging' : ''} ${error ? 'has-error' : ''}`}
               >
                 <CompressOIcon name="addMedia" size={52} className="text-accent" />
                 {/* Phones and tablets can't drop a file, so there the title
@@ -562,17 +562,27 @@ export default function VideoSelector({
                 </span>
                 <span className="drop-zone-formats">{t('landing.formats')}</span>
               </button>
+              {error && (
+                // Over the foot of the drop zone rather than below it, so the
+                // card keeps its height and doesn't jump.
+                <div className="inline-error is-floating" role="alert">
+                  <PanelMascot variant="error" size="sm" className="shrink-0" />
+                  <span className="text-left">{error}</span>
+                </div>
+              )}
             </div>
           )}
 
           {mode === 'trim' && trimVideo && (
             <div className="tray-footer">
+              {/* With a tray open, errors take the status line's place, so
+                  the card keeps its height. */}
               <p
                 id="trim-ranges-hint"
                 aria-live="polite"
-                className={`tray-summary ${rangeStatus.tone === 'hint' ? '' : `is-${rangeStatus.tone}`}`}
+                className={`tray-summary ${error ? 'is-error' : rangeStatus.tone === 'hint' ? '' : `is-${rangeStatus.tone}`}`}
               >
-                {rangeStatus.text}
+                {error ?? rangeStatus.text}
               </p>
               <button
                 type="button"
@@ -589,11 +599,12 @@ export default function VideoSelector({
 
           {mode === 'merge' && clips.length > 0 && (
             <div className="tray-footer">
-              <p className="tray-summary">
-                {t('merge.summary', {
-                  count: clips.length,
-                  size: formatBytes(clips.reduce((sum, clip) => sum + clip.file.size, 0), 1),
-                })}
+              <p aria-live="polite" className={`tray-summary ${error ? 'is-error' : ''}`}>
+                {error ??
+                  t('merge.summary', {
+                    count: clips.length,
+                    size: formatBytes(clips.reduce((sum, clip) => sum + clip.file.size, 0), 1),
+                  })}
               </p>
               <button
                 type="button"
@@ -603,13 +614,6 @@ export default function VideoSelector({
               >
                 {t('common.merge')}
               </button>
-            </div>
-          )}
-
-          {error && (
-            <div className="inline-error" role="alert">
-              <PanelMascot variant="error" size="sm" className="shrink-0" />
-              <span className="text-left">{error}</span>
             </div>
           )}
         </div>

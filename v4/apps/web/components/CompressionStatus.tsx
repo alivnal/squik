@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatBytes } from '@/lib/squish-core';
+import { MAX_OUTPUT_BYTES, formatBytes } from '@/lib/squish-core';
 import MaterialIcon from './MaterialIcon';
 import BeaverCompressionScene from './mascot/BeaverCompressionScene';
 import SquikHero from './SquikHero';
@@ -84,8 +84,11 @@ export default function CompressionStatus({
               <span className="truncate max-w-[min(100%,260px)]">{filename}</span>
             </h1>
             <p className="mt-space-1 text-body-sm leading-5 text-muted">
+              {/* The 200 MB target only means something when the source is over it. */}
               {originalSize
-                ? t('common.originalTarget', { size: formatBytes(originalSize) })
+                ? originalSize > MAX_OUTPUT_BYTES
+                  ? t('common.originalTarget', { size: formatBytes(originalSize) })
+                  : t('common.original', { size: formatBytes(originalSize) })
                 : t('common.targetUnderMb')}
             </p>
           </PanelHeader>
@@ -135,7 +138,7 @@ export default function CompressionStatus({
               className="pixel-btn pixel-btn-secondary pixel-btn-block"
             >
               <MaterialIcon name="cancel" size={18} />
-              {t('status.cancelCompression')}
+              {t('status.cancel')}
             </button>
           </PanelFooter>
         </ScreenPanel>

@@ -192,7 +192,7 @@ export default function SquishApp() {
     setResult(null);
     setWasmLoading(true);
     setMetadata({
-      name: t('status.clipsMerged', { count: files.length }),
+      name: t('status.clips', { count: files.length }),
       size: totalSize,
     });
 

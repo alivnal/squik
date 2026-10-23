@@ -858,6 +858,7 @@ h1[tabindex="-1"]:focus {
 }
 
 .drop-zone-wrap {
+  position: relative;
   min-width: 0;
 }
 
@@ -1257,6 +1258,23 @@ h1[tabindex="-1"]:focus {
   font-size: 0.9375rem;
 }
 
+/* Laid over the foot of the drop zone, where the browse and formats lines
+   step aside (keeping their space, so nothing moves); its tint is opaque,
+   so the dashed border doesn't show through. */
+.drop-zone.has-error .drop-zone-browse,
+.drop-zone.has-error .drop-zone-formats {
+  visibility: hidden;
+}
+
+.inline-error.is-floating {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  margin: 0;
+  box-shadow: var(--shadow-card);
+}
+
 .trust-pill {
   display: flex;
   align-items: center;
@@ -1439,36 +1457,6 @@ h1[tabindex="-1"]:focus {
   line-height: 1.4;
   color: var(--color-muted);
   text-align: center;
-}
-
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out forwards;
-}
-
-.animate-pop-in {
-  animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .pixel-mascot,

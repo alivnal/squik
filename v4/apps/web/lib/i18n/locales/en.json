@@ -14,12 +14,13 @@
     "compress": "Compress",
     "merge": "Merge",
     "trim": "Trim",
-    "tryAgain": "Try Again",
+    "tryAgain": "Try again",
     "targetUnderMb": "Target: under 200 MB",
     "originalTarget": "Original: {{size}} · Target: under 200 MB",
     "mbLimit": "200 MB",
-    "trimAndCompress": "Trim & Compress",
-    "changeFiles": "Change Files"
+    "trimAndCompress": "Trim & compress",
+    "changeFiles": "Change files",
+    "original": "Original: {{size}}"
   },
   "landing": {
     "compressHeadline": "Videos under 200 MB",
@@ -85,9 +86,9 @@
     "trimRangeOutOfBounds": "Range exceeds video duration ({{duration}}).",
     "trimRangeNothingLeft": "All sections deleted — nothing left to keep.",
     "failedTitle": {
-      "compress": "Compression Failed",
-      "merge": "Merge Failed",
-      "trim": "Trim Failed"
+      "compress": "Compression failed",
+      "merge": "Merge failed",
+      "trim": "Trim failed"
     },
     "tooLargeToFit": "This video is too long or too large to fit under 200 MB. Try a shorter clip or a lower-resolution source."
   },
@@ -106,17 +107,18 @@
     "darkMode": "Switch to dark mode"
   },
   "status": {
-    "mergingVideos": "Merging Videos…",
-    "trimmingVideo": "Trimming Video…",
-    "loadingEncoder": "Loading Encoder…",
-    "compressingVideo": "Compressing Video…",
+    "mergingVideos": "Merging videos…",
+    "trimmingVideo": "Trimming video…",
+    "loadingEncoder": "Loading encoder…",
+    "compressingVideo": "Compressing video…",
     "elapsed": "Elapsed {{time}}",
     "encoding": "Encoding {{time}}",
     "wasmHint": "First visit downloads ~25 MB of encoder code.",
     "keepTabOpen": "Keep this tab open — progress tracks each stage of the job.",
     "keepWindowOpen": "Keep this window open — progress tracks each stage of the job.",
-    "cancelCompression": "Cancel Compression",
-    "clipsMerged": "{{count}} clips → merged"
+    "cancel": "Cancel",
+    "clips_one": "{{count}} clip",
+    "clips_other": "{{count}} clips"
   },
   "phase": {
     "preparing": "Preparing video…",
@@ -133,22 +135,22 @@
     "title": {
       "compress": {
         "before": "Video",
-        "accent": "Squished",
+        "accent": "squished",
         "after": "!"
       },
       "fits": {
         "before": "Already",
-        "accent": "Under 200 MB",
+        "accent": "under 200 MB",
         "after": ""
       },
       "merge": {
         "before": "Clips",
-        "accent": "Merged",
+        "accent": "merged",
         "after": "!"
       },
       "trim": {
         "before": "Video",
-        "accent": "Trimmed",
+        "accent": "trimmed",
         "after": "!"
       }
     },
@@ -163,18 +165,18 @@
     "size": "Size",
     "limit": "Limit",
     "saved": "Saved",
-    "larger": "Larger By",
+    "larger": "Larger by",
     "percent": "{{value}}%",
     "original": "Original",
-    "newSize": "New Size",
-    "encodeTime": "Encode Time",
-    "downloadFile": "Download File",
+    "newSize": "New size",
+    "encodeTime": "Encode time",
+    "downloadFile": "Download file",
     "another": {
-      "compress": "Compress Another",
-      "merge": "Merge More Clips",
-      "trim": "Trim Another"
+      "compress": "Compress another",
+      "merge": "Merge more clips",
+      "trim": "Trim another"
     },
-    "showInFolder": "Show in Folder"
+    "showInFolder": "Show in folder"
   },
   "share": {
     "title": "Share",

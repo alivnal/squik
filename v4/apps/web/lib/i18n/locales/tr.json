@@ -14,12 +14,13 @@
     "compress": "Sıkıştır",
     "merge": "Birleştir",
     "trim": "Kırp",
-    "tryAgain": "Tekrar Dene",
+    "tryAgain": "Tekrar dene",
     "targetUnderMb": "Hedef: 200 MB altı",
     "originalTarget": "Orijinal: {{size}} · Hedef: 200 MB altı",
     "mbLimit": "200 MB",
-    "trimAndCompress": "Kırp ve Sıkıştır",
-    "changeFiles": "Dosyaları Değiştir"
+    "trimAndCompress": "Kırp ve sıkıştır",
+    "changeFiles": "Dosyaları değiştir",
+    "original": "Orijinal: {{size}}"
   },
   "landing": {
     "compressHeadline": "Videolar 200 MB altında",
@@ -46,7 +47,7 @@
     }
   },
   "trim": {
-    "pickVideoFirst": "Önce bir video seçin.",
+    "pickVideoFirst": "Önce bir video seç.",
     "rangesLabel": "Silinecek bölümler",
     "rangesHint": "Örn. 00:30 - 01:15. Geri kalanı korunur.",
     "rangesPlaceholder": "00:30 - 01:15\n02:00 - 03:30",
@@ -54,7 +55,7 @@
     "lengthLabel": "Süre",
     "summary_one": "1 bölüm silinecek · kalan {{kept}} / {{total}}",
     "summary_other": "{{count}} bölüm silinecek · kalan {{kept}} / {{total}}",
-    "lineFormat": "{{line}}. satır: 00:30 - 01:15 biçiminde yazın.",
+    "lineFormat": "{{line}}. satır: 00:30 - 01:15 biçiminde yaz.",
     "lineOrder": "{{line}}. satır: bitiş, başlangıçtan önce.",
     "linePastEnd": "{{line}}. satır: {{time}}, videonun sonundan ({{duration}}) sonra."
   },
@@ -65,29 +66,29 @@
     "summary_other": "{{count}} klip · {{size}}"
   },
   "errors": {
-    "invalidFile": "Lütfen desteklenen bir video dosyası seçin (MP4, MOV, WebM, MKV).",
-    "invalidFiles": "Lütfen desteklenen video dosyaları seçin (MP4, MOV, WebM, MKV).",
-    "needTwoVideos": "Birleştirmek için en az iki video ekleyin.",
-    "compressionFailed": "Sıkıştırma başarısız oldu. Lütfen tekrar deneyin.",
-    "bridgeFailed": "Masaüstü köprüsü yüklenemedi. Uygulamayı yeniden yükleyin veya derleyin.",
-    "mergeMinTwo": "Birleştirmek için en az iki video seçin.",
+    "invalidFile": "Desteklenen bir video dosyası seç (MP4, MOV, WebM, MKV).",
+    "invalidFiles": "Desteklenen video dosyaları seç (MP4, MOV, WebM, MKV).",
+    "needTwoVideos": "Birleştirmek için en az iki video ekle.",
+    "compressionFailed": "Sıkıştırma başarısız oldu. Tekrar dene.",
+    "bridgeFailed": "Masaüstü köprüsü yüklenemedi. Uygulamayı yeniden yükle.",
+    "mergeMinTwo": "Birleştirmek için en az iki video seç.",
     "metadataReadFailed": "Video meta verileri okunamadı. Dosya bozuk veya desteklenmiyor olabilir.",
-    "encodingFailed": "FFmpeg kodlaması başarısız oldu. Dosya tarayıcınız için çok büyük olabilir.",
+    "encodingFailed": "FFmpeg kodlaması başarısız oldu. Dosya tarayıcın için çok büyük olabilir.",
     "encodingFailedDetails": "FFmpeg ayrıntıları: {{details}}",
-    "encodingMemoryFailed": "Video kodlanırken tarayıcınızın belleği yetersiz kaldı. Daha kısa veya düşük çözünürlüklü bir video deneyin ya da masaüstü uygulamasını kullanın.",
-    "largeFileInputUnsupported": "Tarayıcınız bu videoyu kodlayıcıya doğrudan aktaramıyor. Farklı bir tarayıcı veya daha küçük bir dosya deneyin.",
-    "mergeFailed": "FFmpeg birleştirmesi başarısız oldu. Klipler tarayıcınız için çok büyük olabilir.",
-    "trimProbeFailed": "Video süresi okunamadı. Lütfen farklı bir dosya deneyin.",
-    "trimRangeEmpty": "Silinecek en az bir zaman aralığı girin.",
+    "encodingMemoryFailed": "Video kodlanırken tarayıcının belleği yetmedi. Daha kısa veya düşük çözünürlüklü bir video dene ya da masaüstü uygulamasını kullan.",
+    "largeFileInputUnsupported": "Tarayıcın bu videoyu kodlayıcıya aktaramıyor. Başka bir tarayıcı ya da daha küçük bir dosya dene.",
+    "mergeFailed": "FFmpeg birleştirmesi başarısız oldu. Klipler tarayıcın için çok büyük olabilir.",
+    "trimProbeFailed": "Video süresi okunamadı. Başka bir dosya dene.",
+    "trimRangeEmpty": "Silinecek en az bir zaman aralığı gir.",
     "trimRangeInvalid": "Bir veya daha fazla aralık geçersiz. Format: 00:30 - 01:15",
     "trimRangeOutOfBounds": "Aralık video süresini aşıyor ({{duration}}).",
     "trimRangeNothingLeft": "Tüm bölümler silindi — korunacak hiçbir şey kalmadı.",
     "failedTitle": {
-      "compress": "Sıkıştırma Başarısız",
-      "merge": "Birleştirme Başarısız",
-      "trim": "Kırpma Başarısız"
+      "compress": "Sıkıştırma başarısız",
+      "merge": "Birleştirme başarısız",
+      "trim": "Kırpma başarısız"
     },
-    "tooLargeToFit": "Bu video 200 MB altına sığmayacak kadar uzun veya büyük. Daha kısa bir klip ya da daha düşük çözünürlüklü bir kaynak deneyin."
+    "tooLargeToFit": "Bu video 200 MB altına sığmayacak kadar uzun ya da büyük. Daha kısa bir klip ya da daha düşük çözünürlüklü bir kaynak dene."
   },
   "a11y": {
     "moveUp": "Yukarı taşı",
@@ -111,10 +112,11 @@
     "elapsed": "Geçen süre {{time}}",
     "encoding": "Kodlama {{time}}",
     "wasmHint": "İlk ziyarette ~25 MB kodlayıcı kodu indirilir.",
-    "keepTabOpen": "Bu sekmeyi açık tutun — ilerleme işin her aşamasını takip eder.",
-    "keepWindowOpen": "Bu pencereyi açık tutun — ilerleme işin her aşamasını takip eder.",
-    "cancelCompression": "Sıkıştırmayı İptal Et",
-    "clipsMerged": "{{count}} klip → birleştirildi"
+    "keepTabOpen": "Bu sekmeyi açık tut — ilerleme işin her aşamasını takip eder.",
+    "keepWindowOpen": "Bu pencereyi açık tut — ilerleme işin her aşamasını takip eder.",
+    "cancel": "İptal et",
+    "clips_one": "{{count}} klip",
+    "clips_other": "{{count}} klip"
   },
   "phase": {
     "preparing": "Video hazırlanıyor…",
@@ -131,22 +133,22 @@
     "title": {
       "compress": {
         "before": "Video",
-        "accent": "Sıkıştırıldı",
+        "accent": "sıkıştırıldı",
         "after": "!"
       },
       "fits": {
         "before": "Zaten",
-        "accent": "200 MB Altında",
+        "accent": "200 MB altında",
         "after": ""
       },
       "merge": {
         "before": "Klipler",
-        "accent": "Birleştirildi",
+        "accent": "birleştirildi",
         "after": "!"
       },
       "trim": {
         "before": "Video",
-        "accent": "Kırpıldı",
+        "accent": "kırpıldı",
         "after": "!"
       }
     },
@@ -164,15 +166,15 @@
     "larger": "Büyüme",
     "percent": "%{{value}}",
     "original": "Orijinal",
-    "newSize": "Yeni Boyut",
-    "encodeTime": "Kodlama Süresi",
-    "downloadFile": "Dosyayı İndir",
+    "newSize": "Yeni boyut",
+    "encodeTime": "Kodlama süresi",
+    "downloadFile": "Dosyayı indir",
     "another": {
-      "compress": "Başka Video Sıkıştır",
-      "merge": "Başka Klip Birleştir",
-      "trim": "Başka Video Kırp"
+      "compress": "Başka video sıkıştır",
+      "merge": "Başka klip birleştir",
+      "trim": "Başka video kırp"
     },
-    "showInFolder": "Klasörde Göster"
+    "showInFolder": "Klasörde göster"
   },
   "share": {
     "title": "Paylaş",
@@ -180,7 +182,7 @@
     "mail": "E-posta",
     "slack": "Slack",
     "more": "Diğer…",
-    "dragHint": "Dosya klasöründe gösterildi. Açılan sayfaya sürükleyip bırakın.",
+    "dragHint": "Dosya klasöründe gösterildi. Açılan sayfaya sürükleyip bırak.",
     "failed": "Dosya paylaşılamadı: {{message}}"
   },
   "footer": {
