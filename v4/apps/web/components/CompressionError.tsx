@@ -60,6 +60,7 @@ export default function CompressionError({ message, job = 'compress', onRetry, o
                 onClick={onChangeFiles}
                 className="pixel-btn pixel-btn-secondary pixel-btn-block"
               >
+                <MaterialIcon name="arrow_back" size={20} />
                 {t('common.changeFiles')}
               </button>
             )}
