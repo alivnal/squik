@@ -79,10 +79,10 @@ export default function CompressionStatus({
       <div className="scene-card">
         <ScreenPanel size="lg" className="z-10">
           <PanelHeader>
-            <div className="flex items-center justify-center gap-2 text-headline-sm text-ink">
+            <h1 tabIndex={-1} className="flex items-center justify-center gap-2 text-headline-sm text-ink">
               <MaterialIcon name="movie" filled className="text-accent shrink-0" size={20} />
               <span className="truncate max-w-[min(100%,260px)]">{filename}</span>
-            </div>
+            </h1>
             <p className="mt-space-1 text-body-sm leading-5 text-muted">
               {originalSize
                 ? t('common.originalTarget', { size: formatBytes(originalSize) })
@@ -93,7 +93,16 @@ export default function CompressionStatus({
           <PanelDivider />
 
           <PanelBody className="flex flex-col items-center">
-            <BeaverCompressionScene progress={progressSnap.progress} percentage={percentage} />
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={percentage}
+              aria-label={phaseTitle}
+              className="w-full"
+            >
+              <BeaverCompressionScene progress={progressSnap.progress} percentage={percentage} />
+            </div>
 
             <div className="status-details mt-space-6 text-center w-full">
               <p className="text-headline-sm leading-[30px] text-accent" aria-live="polite">

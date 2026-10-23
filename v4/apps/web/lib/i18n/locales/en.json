@@ -87,7 +87,10 @@
     "restore": "Restore",
     "close": "Close",
     "moveEarlier": "Move earlier",
-    "moveLater": "Move later"
+    "moveLater": "Move later",
+    "home": "Squik home",
+    "lightMode": "Switch to light mode",
+    "darkMode": "Switch to dark mode"
   },
   "status": {
     "mergingVideos": "Merging Videos…",

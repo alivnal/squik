@@ -17,7 +17,7 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <div className="flex flex-col min-h-[100dvh] w-full bg-canvas text-ink">
       <AppHeader />
-      <div className="app-canvas flex-1">{children}</div>
+      <main className="app-canvas flex-1">{children}</main>
       <AppFooter />
     </div>
   );

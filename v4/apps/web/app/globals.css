@@ -9,11 +9,14 @@
   --color-canvas: #f9fafb;
   --color-surface: #ffffff;
   --color-ink: #18181b;
-  --color-muted: #71717a;
+  --color-muted: #68686f;
   --color-border: #e4e4e7;
-  --color-accent: #0e71fb;
+  --color-accent: #0a66e0;
   --color-accent-hover: #0b5fd4;
   --color-accent-tint: #ebf3ff;
+  /* Text on an accent fill: white on the light accent, ink on the dark one.
+     Both pairs, and the light accent as text on white and gray-100, clear 4.5:1. */
+  --color-on-accent: #ffffff;
   --color-beaver-blue: #0e71fb;
   --color-beaver-blue-dark: #0b5fd4;
   --color-beaver-blue-light: #5ba3ff;
@@ -78,6 +81,7 @@
     --color-accent: #5ba3ff;
     --color-accent-hover: #4a90f5;
     --color-accent-tint: #0e1e38;
+    --color-on-accent: #0f0f11;
     --color-beaver-belly: #2e2e34;
     --color-beaver-nose: #f4f4f5;
     --color-success: #34d399;
@@ -100,6 +104,7 @@
   --color-accent: #5ba3ff;
   --color-accent-hover: #4a90f5;
   --color-accent-tint: #0e1e38;
+  --color-on-accent: #0f0f11;
   --color-beaver-belly: #2e2e34;
   --color-beaver-nose: #f4f4f5;
   --color-success: #34d399;
@@ -116,11 +121,12 @@
   --color-canvas: #f9fafb;
   --color-surface: #ffffff;
   --color-ink: #18181b;
-  --color-muted: #71717a;
+  --color-muted: #68686f;
   --color-border: #e4e4e7;
-  --color-accent: #0e71fb;
+  --color-accent: #0a66e0;
   --color-accent-hover: #0b5fd4;
   --color-accent-tint: #ebf3ff;
+  --color-on-accent: #ffffff;
   --color-beaver-belly: #e4e4e7;
   --color-beaver-nose: #18181b;
   --color-success: #027a48;
@@ -234,9 +240,13 @@ body {
   background-color: var(--color-surface);
 }
 
+/* Same surface as the panel, so its actions read as part of it: a gray-50
+   footer matched the light canvas and the buttons seemed to float off the
+   panel, and a gray-100 one swallowed the gray-100 secondary button. */
 .app-panel-footer {
   padding: clamp(0.75rem, 2vw, 1rem) clamp(0.875rem, 3vw, 1.5rem) clamp(0.875rem, 3vw, 1.25rem);
-  background-color: var(--color-gray-50);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface);
 }
 
 .app-site-footer {
@@ -418,6 +428,7 @@ body {
 }
 
 .drop-zone:focus-visible,
+.app-header-brand:focus-visible,
 .theme-toggle:focus-visible,
 .language-picker-btn:focus-visible,
 .tool-tab:focus-visible,
@@ -716,6 +727,29 @@ body {
   min-height: 0;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+.tool-heading h1 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 1.375rem;
+  font-weight: 650;
+  line-height: 1.75rem;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.tool-heading p {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+}
+
+/* Headings take focus only from script, after a screen change; the reader
+   announces them, and a ring around a heading would read as a control. */
+h1[tabindex="-1"]:focus {
+  outline: none;
 }
 
 @keyframes settle-in {
@@ -1210,7 +1244,7 @@ body {
 }
 
 .pixel-btn {
-  color: #ffffff;
+  color: var(--color-on-accent);
   background: var(--color-accent);
   font-weight: 650;
   font-size: 1rem;
@@ -1410,17 +1444,6 @@ body {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .app-inset {
-    background-color: var(--color-gray-100);
-  }
-}
-
-[data-theme="dark"] .app-panel-footer,
-:root:not([data-theme="light"]) .app-panel-footer {
-  background-color: var(--color-gray-100);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .app-panel-footer {
     background-color: var(--color-gray-100);
   }
 }

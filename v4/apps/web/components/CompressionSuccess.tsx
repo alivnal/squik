@@ -99,7 +99,7 @@ export default function CompressionSuccess({ result, job = 'compress', onReset }
               <PanelMascot variant="confetti" size="xl" />
             </div>
 
-            <h1 className="text-[clamp(1.375rem,4vw,1.875rem)] leading-tight text-ink mb-space-2">
+            <h1 tabIndex={-1} className="text-[clamp(1.375rem,4vw,1.875rem)] leading-tight text-ink mb-space-2">
               {t(`success.title.${outcome}.before`)}{' '}
               <span className="text-success">{t(`success.title.${outcome}.accent`)}</span>
               {t(`success.title.${outcome}.after`)}

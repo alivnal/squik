@@ -319,6 +319,12 @@ export default function VideoSelector({
 
       <div className="tool-ui" data-ui="video-compressor">
         <div className="tool-ui-body">
+          {/* Each screen's h1 takes focus when the screen changes. */}
+          <div className="tool-heading">
+            <h1 tabIndex={-1}>{t(`landing.${mode}Headline`)}</h1>
+            <p>{t(`landing.${mode}SubtitleAfter`)}</p>
+          </div>
+
           <div className="tool-tabs" data-ui="mode-controls" role="group" aria-label={t('landing.tools')}>
             {(['compress', 'merge', 'trim'] as const).map((tab) => (
               <button
@@ -509,7 +515,7 @@ export default function VideoSelector({
           )}
 
           {error && (
-            <div className="inline-error">
+            <div className="inline-error" role="alert">
               <PanelMascot variant="error" size="sm" className="shrink-0" />
               <span className="text-left">{error}</span>
             </div>

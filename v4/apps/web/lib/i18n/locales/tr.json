@@ -85,7 +85,10 @@
     "restore": "Geri yükle",
     "close": "Kapat",
     "moveEarlier": "Öne al",
-    "moveLater": "Sona al"
+    "moveLater": "Sona al",
+    "home": "Squik ana sayfa",
+    "lightMode": "Açık temaya geç",
+    "darkMode": "Koyu temaya geç"
   },
   "status": {
     "mergingVideos": "Videolar birleştiriliyor…",

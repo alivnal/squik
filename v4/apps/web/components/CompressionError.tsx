@@ -35,10 +35,10 @@ export default function CompressionError({ message, job = 'compress', onRetry, o
           <PanelMascot variant="error" size="lg" />
 
           <div className="space-y-space-2">
-            <h2 className="text-headline-sm leading-[30px] text-ink">
+            <h1 tabIndex={-1} className="text-headline-sm leading-[30px] text-ink">
               {t(`errors.failedTitle.${job}`)}
-            </h2>
-            <p className="text-body-sm leading-5 text-error">{message}</p>
+            </h1>
+            <p role="alert" className="text-body-sm leading-5 text-error">{message}</p>
           </div>
         </PanelBody>
 
