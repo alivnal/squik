@@ -349,9 +349,7 @@ async function compressFromWasmFs(
     blueprint = blueprintForWebPass(tierIndex, metadata.duration);
   }
 
-  throw new Error(
-    'Video too long or large to compress under 200 MB. Try a shorter clip or lower resolution source.',
-  );
+  throw new Error(t('errors.tooLargeToFit'));
 }
 
 function isMemoryPressure(error: FfmpegEncodeError): boolean {
@@ -470,12 +468,15 @@ async function compressFileWithFfmpeg(
   if (metadata.size <= MAX_OUTPUT_BYTES && withinSkipCeiling) {
     jobProgress.finish();
     const outputUrl = URL.createObjectURL(file);
+    // The original file goes back untouched, so it keeps its own extension, as
+    // the desktop app's does.
+    const skippedFilename = outputFilename ?? `${basename}_compressed${extFromName(file.name)}`;
     return {
       compressedSize: metadata.size,
       originalSize: sourceSize,
-      outputPath: filename,
+      outputPath: skippedFilename,
       skippedEncode: true,
-      filename,
+      filename: skippedFilename,
       encoderLabel: ENCODER_LABEL,
       outputBlob: file,
       outputUrl,
@@ -908,9 +909,7 @@ export async function trimAndCompressVideosWasm(
         blueprint = blueprintForWebPass(tierIndex, totalKeepDuration);
       }
 
-      throw new Error(
-        'Video too long or large to compress under 200 MB. Try a shorter clip or lower resolution source.',
-      );
+      throw new Error(t('errors.tooLargeToFit'));
     }
 
     const trimResult = await trimVideoInFfmpeg(ffmpeg, inputName, sourceMeta, deleteSegments, {

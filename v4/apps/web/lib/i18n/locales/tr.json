@@ -14,11 +14,12 @@
     "compress": "Sıkıştır",
     "merge": "Birleştir",
     "trim": "Kırp",
-    "tryAgain": "Tekrar dene",
+    "tryAgain": "Tekrar Dene",
     "targetUnderMb": "Hedef: 200 MB altı",
     "originalTarget": "Orijinal: {{size}} · Hedef: 200 MB altı",
     "mbLimit": "200 MB",
-    "trimAndCompress": "Kırp ve Sıkıştır"
+    "trimAndCompress": "Kırp ve Sıkıştır",
+    "changeFiles": "Dosyaları Değiştir"
   },
   "landing": {
     "compressHeadline": "Videolar 200 MB altında",
@@ -55,7 +56,6 @@
     "invalidFiles": "Lütfen desteklenen video dosyaları seçin (MP4, MOV, WebM, MKV).",
     "needTwoVideos": "Birleştirmek için en az iki video ekleyin.",
     "compressionFailed": "Sıkıştırma başarısız oldu. Lütfen tekrar deneyin.",
-    "compressionFailedTitle": "Sıkıştırma Başarısız",
     "bridgeFailed": "Masaüstü köprüsü yüklenemedi. Uygulamayı yeniden yükleyin veya derleyin.",
     "mergeMinTwo": "Birleştirmek için en az iki video seçin.",
     "metadataReadFailed": "Video meta verileri okunamadı. Dosya bozuk veya desteklenmiyor olabilir.",
@@ -68,7 +68,13 @@
     "trimRangeEmpty": "Silinecek en az bir zaman aralığı girin.",
     "trimRangeInvalid": "Bir veya daha fazla aralık geçersiz. Format: 00:30 - 01:15",
     "trimRangeOutOfBounds": "Aralık video süresini aşıyor ({{duration}}).",
-    "trimRangeNothingLeft": "Tüm bölümler silindi — korunacak hiçbir şey kalmadı."
+    "trimRangeNothingLeft": "Tüm bölümler silindi — korunacak hiçbir şey kalmadı.",
+    "failedTitle": {
+      "compress": "Sıkıştırma Başarısız",
+      "merge": "Birleştirme Başarısız",
+      "trim": "Kırpma Başarısız"
+    },
+    "tooLargeToFit": "Bu video 200 MB altına sığmayacak kadar uzun veya büyük. Daha kısa bir klip ya da daha düşük çözünürlüklü bir kaynak deneyin."
   },
   "a11y": {
     "moveUp": "Yukarı taşı",
@@ -106,19 +112,50 @@
     "trimmingClips": "Klipler kırpılıyor…"
   },
   "success": {
-    "titleBefore": "Sıkıştırma",
-    "titleAccent": "Tamamlandı",
-    "titleAfter": "!",
-    "description": "Videonuz başarıyla optimize edildi.",
-    "descriptionWithEncoder": "Videonuz {{encoder}} ile başarıyla optimize edildi.",
-    "mergedFrom": "{{count}} klipten birleştirildi.",
-    "trimmedFrom": "{{count}} bölüm kırpıldı.",
+    "title": {
+      "compress": {
+        "before": "Video",
+        "accent": "Sıkıştırıldı",
+        "after": "!"
+      },
+      "fits": {
+        "before": "Zaten",
+        "accent": "200 MB Altında",
+        "after": ""
+      },
+      "merge": {
+        "before": "Klipler",
+        "accent": "Birleştirildi",
+        "after": "!"
+      },
+      "trim": {
+        "before": "Video",
+        "accent": "Kırpıldı",
+        "after": "!"
+      }
+    },
+    "description": {
+      "compress": "Paylaşmaya hazır: 200 MB sınırına sığıyor.",
+      "fits": "Zaten sığıyordu, bu yüzden dokunulmadı: aynı dosya, tam kalite.",
+      "merge_one": "{{count}} klip, 200 MB altında tek videoya dönüştürüldü.",
+      "merge_other": "{{count}} klip, 200 MB altında tek videoda birleştirildi.",
+      "trim_one": "1 bölüm çıkarıldı. Video 200 MB altında.",
+      "trim_other": "{{count}} bölüm çıkarıldı. Video 200 MB altında."
+    },
+    "size": "Boyut",
+    "limit": "Sınır",
     "saved": "Tasarruf",
+    "larger": "Büyüme",
+    "percent": "%{{value}}",
     "original": "Orijinal",
     "newSize": "Yeni Boyut",
     "encodeTime": "Kodlama Süresi",
     "downloadFile": "Dosyayı İndir",
-    "compressAnother": "Başka Video Sıkıştır",
+    "another": {
+      "compress": "Başka Video Sıkıştır",
+      "merge": "Başka Klip Birleştir",
+      "trim": "Başka Video Kırp"
+    },
     "showInFolder": "Klasörde Göster"
   },
   "share": {

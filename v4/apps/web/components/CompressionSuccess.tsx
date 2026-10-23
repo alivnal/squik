@@ -13,24 +13,25 @@ import { nativeOutput } from '@/lib/platform';
 import MaterialIcon from './MaterialIcon';
 import PanelMascot from './mascot/PanelMascot';
 import ShareTargets from './ShareTargets';
+import SquikHero from './SquikHero';
 import { PanelBody, ScreenPanel } from './ScreenPanel';
 
 /** Desktop only: where the result stands with the native Save sheet. */
 type SaveState = { status: 'asking' | 'cancelled' } | { status: 'saved'; path: string };
 
+type Job = 'compress' | 'merge' | 'trim';
+
 interface CompressionSuccessProps {
   result: WebCompressionResult;
+  /** The finished job, which picks the title, the copy and the diorama. */
+  job?: Job;
   onReset: () => void;
 }
 
-function savedPercent(original: number, compressed: number): number {
-  if (original <= 0) return 0;
-  return Math.max(0, Math.round(((original - compressed) / original) * 100));
-}
+type Stat = { label: string; value: string; className?: string };
 
-export default function CompressionSuccess({ result, onReset }: CompressionSuccessProps) {
+export default function CompressionSuccess({ result, job = 'compress', onReset }: CompressionSuccessProps) {
   const { t } = useTranslation();
-  const percent = savedPercent(result.originalSize, result.compressedSize);
   const [save, setSave] = useState<SaveState>({ status: 'asking' });
   const askedFor = useRef<string | null>(null);
 
@@ -54,95 +55,108 @@ export default function CompressionSuccess({ result, onReset }: CompressionSucce
     void saveResult();
   }, [result.outputUrl, saveResult]);
 
-  const description = result.encoderLabel
-    ? t('success.descriptionWithEncoder', { encoder: result.encoderLabel })
-    : t('success.description');
+  // A compress job that found the file already small enough hands it back
+  // untouched; say so instead of celebrating a 0% saving.
+  const outcome = job === 'compress' && result.skippedEncode ? 'fits' : job;
+  const description =
+    outcome === 'merge'
+      ? t('success.description.merge', { count: result.clipCount ?? 2 })
+      : outcome === 'trim'
+        ? t('success.description.trim', { count: result.trimSegmentCount ?? 1 })
+        : t(`success.description.${outcome}`);
+
+  const { originalSize, compressedSize } = result;
+  const stats: Stat[] = [];
+  if (compressedSize === originalSize) {
+    stats.push({ label: t('success.size'), value: formatBytes(compressedSize) });
+    stats.push({ label: t('success.limit'), value: t('common.mbLimit') });
+  } else {
+    stats.push({ label: t('success.original'), value: formatBytes(originalSize) });
+    stats.push({ label: t('success.newSize'), value: formatBytes(compressedSize), className: 'text-accent' });
+    // Trim and merge can come out larger than what went in; report that as it
+    // is rather than clamping it to a 0% saving.
+    const change = originalSize > 0 ? Math.round((Math.abs(originalSize - compressedSize) / originalSize) * 100) : 0;
+    stats.push(
+      compressedSize < originalSize
+        ? { label: t('success.saved'), value: t('success.percent', { value: change }), className: 'text-success' }
+        : { label: t('success.larger'), value: t('success.percent', { value: change }) },
+    );
+  }
+  // Under a second would read as 00:00.
+  if (!result.skippedEncode && result.encodeTimeMs != null && result.encodeTimeMs >= 1000) {
+    stats.push({ label: t('success.encodeTime'), value: formatElapsed(result.encodeTimeMs) });
+  }
 
   return (
-    <div>
-      <ScreenPanel size="2xl" className="z-10">
-        <PanelBody className="text-center pt-space-6 pb-space-6">
-          <div className="success-mascot mx-auto mb-space-4 flex items-center justify-center">
-            <PanelMascot variant="confetti" size="xl" />
-          </div>
-
-          <h1 className="text-[clamp(1.375rem,4vw,1.875rem)] leading-tight text-ink mb-space-2">
-            {t('success.titleBefore')}{' '}
-            <span className="text-success">{t('success.titleAccent')}</span>
-            {t('success.titleAfter')}
-          </h1>
-          <p className="success-description text-body-sm leading-5 text-muted mb-space-6 max-w-md mx-auto">
-            {description}
-            {result.clipCount && result.clipCount > 1
-              ? ` ${t('success.mergedFrom', { count: result.clipCount })}`
-              : ''}
-            {result.trimSegmentCount && result.trimSegmentCount > 0
-              ? ` ${t('success.trimmedFrom', { count: result.trimSegmentCount })}`
-              : ''}
-          </p>
-
-          <div className="success-stats">
-            <div className="panel-stat success-stat">
-              <span className="panel-stat-label">{t('success.saved')}</span>
-              <span className="panel-stat-value text-headline-lg text-success">{percent}%</span>
+    // The finished job's diorama stays beside the panel, placed as it was while
+    // the job ran.
+    <section className="tool-layout job-layout">
+      <SquikHero scene={job} />
+      <div className="scene-card">
+        <ScreenPanel size="lg" className="z-10">
+          <PanelBody className="text-center pt-space-6 pb-space-6">
+            <div className="success-mascot mx-auto mb-space-4 flex items-center justify-center">
+              <PanelMascot variant="confetti" size="xl" />
             </div>
-            <div className="panel-stat success-stat">
-              <span className="panel-stat-label">{t('success.original')}</span>
-              <span className="panel-stat-value text-headline-sm">{formatBytes(result.originalSize)}</span>
-            </div>
-            <div className="panel-stat success-stat">
-              <span className="panel-stat-label">{t('success.newSize')}</span>
-              <span className="panel-stat-value text-headline-sm text-accent">
-                {formatBytes(result.compressedSize)}
-              </span>
-            </div>
-            <div className="panel-stat success-stat">
-              <span className="panel-stat-label">{t('success.encodeTime')}</span>
-              <span className="panel-stat-value text-headline-sm">
-                {result.encodeTimeMs != null ? formatElapsed(result.encodeTimeMs) : '—'}
-              </span>
-            </div>
-          </div>
 
-          <p className="mt-space-4 text-body-sm leading-5 text-muted break-all px-1">
-            {save.status === 'saved' ? save.path : result.filename}
-          </p>
+            <h1 className="text-[clamp(1.375rem,4vw,1.875rem)] leading-tight text-ink mb-space-2">
+              {t(`success.title.${outcome}.before`)}{' '}
+              <span className="text-success">{t(`success.title.${outcome}.accent`)}</span>
+              {t(`success.title.${outcome}.after`)}
+            </h1>
+            <p className="success-description text-body-sm leading-5 text-muted mb-space-6 max-w-md mx-auto">
+              {description}
+            </p>
 
-          <div className="action-btn-row">
-            {!nativeOutput ? (
-              <a
-                href={result.outputUrl}
-                download={result.filename}
-                className="pixel-btn no-underline"
-              >
-                <MaterialIcon name="download" size={18} />
-                {t('success.downloadFile')}
-              </a>
-            ) : save.status === 'saved' ? (
-              <button type="button" onClick={() => nativeOutput?.reveal(save.path)} className="pixel-btn">
-                <MaterialIcon name="folder_open" size={18} />
-                {t('success.showInFolder')}
+            <div className="success-stats">
+              {stats.map((stat) => (
+                <div key={stat.label} className="panel-stat success-stat">
+                  <span className="panel-stat-label">{stat.label}</span>
+                  <span className={`panel-stat-value text-headline-sm ${stat.className ?? ''}`}>{stat.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-space-4 text-body-sm leading-5 text-muted break-all px-1">
+              {save.status === 'saved' ? save.path : result.filename}
+            </p>
+
+            <div className="action-btn-row">
+              {!nativeOutput ? (
+                <a
+                  href={result.outputUrl}
+                  download={result.filename}
+                  className="pixel-btn no-underline"
+                >
+                  <MaterialIcon name="download" size={18} />
+                  {t('success.downloadFile')}
+                </a>
+              ) : save.status === 'saved' ? (
+                <button type="button" onClick={() => nativeOutput?.reveal(save.path)} className="pixel-btn">
+                  <MaterialIcon name="folder_open" size={18} />
+                  {t('success.showInFolder')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void saveResult()}
+                  disabled={save.status === 'asking'}
+                  className="pixel-btn"
+                >
+                  <MaterialIcon name="download" size={18} />
+                  {t('success.downloadFile')}
+                </button>
+              )}
+              <button type="button" onClick={onReset} className="pixel-btn pixel-btn-secondary">
+                <MaterialIcon name="add_circle" size={18} />
+                {t(`success.another.${job}`)}
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void saveResult()}
-                disabled={save.status === 'asking'}
-                className="pixel-btn"
-              >
-                <MaterialIcon name="download" size={18} />
-                {t('success.downloadFile')}
-              </button>
-            )}
-            <button type="button" onClick={onReset} className="pixel-btn pixel-btn-secondary">
-              <MaterialIcon name="add_circle" size={18} />
-              {t('success.compressAnother')}
-            </button>
-          </div>
+            </div>
 
-          {nativeOutput && <ShareTargets outputUrl={result.outputUrl} actions={nativeOutput} />}
-        </PanelBody>
-      </ScreenPanel>
-    </div>
+            {nativeOutput && <ShareTargets outputUrl={result.outputUrl} actions={nativeOutput} />}
+          </PanelBody>
+        </ScreenPanel>
+      </div>
+    </section>
   );
 }

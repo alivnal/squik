@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   formatBytes,
@@ -31,11 +31,21 @@ export interface ClipEntry {
   file: File;
 }
 
+/** Files and ranges to put back in the card, e.g. after a cancelled job. */
+export interface SelectorDraft {
+  clips?: File[];
+  trimVideo?: File;
+  rangeText?: string;
+}
+
 interface VideoSelectorProps {
   onVideoSelected: (file: File) => void;
   onMergeAndCompress: (files: File[]) => void;
-  onTrimAndCompress: (file: File, deleteSegments: TrimSegment[]) => void;
+  onTrimAndCompress: (file: File, deleteSegments: TrimSegment[], rangeText: string) => void;
   disabled?: boolean;
+  /** The tab to open on: the last job's, so "Trim Another" lands in Trim. */
+  initialMode?: SelectorMode;
+  initialDraft?: SelectorDraft;
 }
 
 function isVideoFile(file: File): boolean {
@@ -51,28 +61,25 @@ export default function VideoSelector({
   onMergeAndCompress,
   onTrimAndCompress,
   disabled = false,
+  initialMode = 'compress',
+  initialDraft,
 }: VideoSelectorProps) {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<SelectorMode>('compress');
+  const [mode, setMode] = useState<SelectorMode>(initialMode);
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [clips, setClips] = useState<ClipEntry[]>([]);
-  const [trimVideo, setTrimVideo] = useState<File | null>(null);
+  const [clips, setClips] = useState<ClipEntry[]>(
+    () => initialDraft?.clips?.map((file) => ({ id: clipKey(file), file })) ?? [],
+  );
+  const [trimVideo, setTrimVideo] = useState<File | null>(initialDraft?.trimVideo ?? null);
   const [trimDurationSec, setTrimDurationSec] = useState<number | null>(null);
-  const [rangeText, setRangeText] = useState('');
+  const [rangeText, setRangeText] = useState(initialDraft?.rangeText ?? '');
   const [trimProbing, setTrimProbing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const clipListRef = useRef<HTMLUListElement>(null);
   const ignoreClickRef = useRef(false);
   const clipLayoutKey = clips.map((clip) => clip.id).join('|');
   const { captureBeforeUpdate: captureClipLayout } = useFlipList(clipListRef, clipLayoutKey);
-
-  const clearTrimState = () => {
-    setTrimVideo(null);
-    setTrimDurationSec(null);
-    setRangeText('');
-    setTrimProbing(false);
-  };
 
   const selectTrimVideo = async (file: File) => {
     setTrimProbing(true);
@@ -90,6 +97,12 @@ export default function VideoSelector({
       setTrimProbing(false);
     }
   };
+
+  // A video put back from a draft still needs its length read; once, for the
+  // draft the card opened with.
+  useEffect(() => {
+    if (initialDraft?.trimVideo) void selectTrimVideo(initialDraft.trimVideo);
+  }, []);
 
   const addClips = (files: File[]) => {
     if (files.length === 0) return;
@@ -251,7 +264,7 @@ export default function VideoSelector({
     }
 
     setError(null);
-    onTrimAndCompress(trimVideo, deleteSegments);
+    onTrimAndCompress(trimVideo, deleteSegments, rangeText);
   };
 
   const handleMerge = () => {
@@ -263,12 +276,11 @@ export default function VideoSelector({
     onMergeAndCompress(clips.map((c) => c.file));
   };
 
+  // Each tab keeps its own files: merge clips and the trim video and ranges
+  // are still there when the user comes back.
   const switchMode = (nextMode: SelectorMode) => {
-    if (clips.length > 0) captureClipLayout();
     setMode(nextMode);
     setError(null);
-    setClips([]);
-    clearTrimState();
   };
 
   let parsedRangeCount = 0;

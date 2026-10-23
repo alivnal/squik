@@ -14,11 +14,12 @@
     "compress": "Compress",
     "merge": "Merge",
     "trim": "Trim",
-    "tryAgain": "Try again",
+    "tryAgain": "Try Again",
     "targetUnderMb": "Target: under 200 MB",
     "originalTarget": "Original: {{size}} · Target: under 200 MB",
     "mbLimit": "200 MB",
-    "trimAndCompress": "Trim & Compress"
+    "trimAndCompress": "Trim & Compress",
+    "changeFiles": "Change Files"
   },
   "landing": {
     "compressHeadline": "Videos under 200 MB",
@@ -55,7 +56,6 @@
     "invalidFiles": "Please choose supported video files (MP4, MOV, WebM, MKV).",
     "needTwoVideos": "Add at least two videos to merge.",
     "compressionFailed": "Compression failed. Please try again.",
-    "compressionFailedTitle": "Compression Failed",
     "bridgeFailed": "Desktop bridge failed to load. Reinstall or rebuild the app.",
     "bridgeUnavailable": "Desktop bridge unavailable.",
     "dropPathFailed": "Could not read dropped file path.",
@@ -70,7 +70,13 @@
     "trimRangeEmpty": "Enter at least one time range to delete.",
     "trimRangeInvalid": "One or more ranges are invalid. Use format: 00:30 - 01:15",
     "trimRangeOutOfBounds": "Range exceeds video duration ({{duration}}).",
-    "trimRangeNothingLeft": "All sections deleted — nothing left to keep."
+    "trimRangeNothingLeft": "All sections deleted — nothing left to keep.",
+    "failedTitle": {
+      "compress": "Compression Failed",
+      "merge": "Merge Failed",
+      "trim": "Trim Failed"
+    },
+    "tooLargeToFit": "This video is too long or too large to fit under 200 MB. Try a shorter clip or a lower-resolution source."
   },
   "a11y": {
     "moveUp": "Move up",
@@ -108,19 +114,50 @@
     "trimmingClips": "Trimming clips…"
   },
   "success": {
-    "titleBefore": "Compression",
-    "titleAccent": "Complete",
-    "titleAfter": "!",
-    "description": "Your video has been successfully optimized.",
-    "descriptionWithEncoder": "Your video has been successfully optimized with {{encoder}}.",
-    "mergedFrom": "Merged from {{count}} clips.",
-    "trimmedFrom": "Trimmed {{count}} section(s).",
+    "title": {
+      "compress": {
+        "before": "Video",
+        "accent": "Squished",
+        "after": "!"
+      },
+      "fits": {
+        "before": "Already",
+        "accent": "Under 200 MB",
+        "after": ""
+      },
+      "merge": {
+        "before": "Clips",
+        "accent": "Merged",
+        "after": "!"
+      },
+      "trim": {
+        "before": "Video",
+        "accent": "Trimmed",
+        "after": "!"
+      }
+    },
+    "description": {
+      "compress": "Ready to share: it fits the 200 MB limit.",
+      "fits": "It already fit, so it was left untouched: same file, full quality.",
+      "merge_one": "{{count}} clip turned into one video under 200 MB.",
+      "merge_other": "{{count}} clips joined into one video under 200 MB.",
+      "trim_one": "Removed 1 section. The video fits under 200 MB.",
+      "trim_other": "Removed {{count}} sections. The video fits under 200 MB."
+    },
+    "size": "Size",
+    "limit": "Limit",
     "saved": "Saved",
+    "larger": "Larger By",
+    "percent": "{{value}}%",
     "original": "Original",
     "newSize": "New Size",
     "encodeTime": "Encode Time",
     "downloadFile": "Download File",
-    "compressAnother": "Compress Another",
+    "another": {
+      "compress": "Compress Another",
+      "merge": "Merge More Clips",
+      "trim": "Trim Another"
+    },
     "showInFolder": "Show in Folder"
   },
   "share": {

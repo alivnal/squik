@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { AppStatus, type TrimSegment, type VideoMetadata, type WebCompressionResult } from '@/lib/squish-core';
 import AppShell from '@/components/AppShell';
 import ScreenTransition from '@/components/ScreenTransition';
-import VideoSelector from '@/components/VideoSelector';
+import VideoSelector, { type SelectorDraft } from '@/components/VideoSelector';
 import CompressionStatus from '@/components/CompressionStatus';
 import CompressionSuccess from '@/components/CompressionSuccess';
 import CompressionError from '@/components/CompressionError';
@@ -32,6 +32,18 @@ const INITIAL_SNAPSHOT: CompressionProgressSnapshot = {
 
 type JobKind = 'compress' | 'merge' | 'trim';
 
+/** What a job was started with, so it can run again or go back into the card. */
+type JobInput =
+  | { kind: 'compress'; file: File }
+  | { kind: 'merge'; files: File[] }
+  | { kind: 'trim'; file: File; deleteSegments: TrimSegment[]; rangeText: string };
+
+function draftFor(job: JobInput | null): SelectorDraft | undefined {
+  if (job?.kind === 'merge') return { clips: job.files };
+  if (job?.kind === 'trim') return { trimVideo: job.file, rangeText: job.rangeText };
+  return undefined;
+}
+
 export default function SquishApp() {
   const { t } = useTranslation();
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
@@ -41,6 +53,9 @@ export default function SquishApp() {
   const [result, setResult] = useState<WebCompressionResult | null>(null);
   const [wasmLoading, setWasmLoading] = useState(false);
   const [jobKind, setJobKind] = useState<JobKind>('compress');
+  // Files and ranges the card opens with: the cancelled job's, else none.
+  const [draft, setDraft] = useState<SelectorDraft | undefined>(undefined);
+  const lastJobRef = useRef<JobInput | null>(null);
 
   const compressionSessionRef = useRef(0);
   const outputUrlRef = useRef<string | null>(null);
@@ -59,7 +74,7 @@ export default function SquishApp() {
   const invalidateCompressionSession = () => {
     compressionSessionRef.current += 1;
     cancelWasmCompression();
-    setJobKind('compress');
+    // jobKind stays: the selector reopens on the last job's tab.
     jobStartedAtRef.current = null;
     encodeStartedAtRef.current = null;
   };
@@ -74,6 +89,7 @@ export default function SquishApp() {
   const reset = () => {
     invalidateCompressionSession();
     revokeOutputUrl();
+    setDraft(undefined);
     setStatus(AppStatus.IDLE);
     setMetadata(null);
     setResult(null);
@@ -82,9 +98,12 @@ export default function SquishApp() {
     setWasmLoading(false);
   };
 
-  const handleCancel = () => {
+  // Back to the card with the job's files and ranges still in it: after a
+  // cancel, or from the error screen to change them.
+  const backToFiles = () => {
     invalidateCompressionSession();
     revokeOutputUrl();
+    setDraft(draftFor(lastJobRef.current));
     setStatus(AppStatus.IDLE);
     setMetadata(null);
     setResult(null);
@@ -124,6 +143,7 @@ export default function SquishApp() {
       setStatus(AppStatus.ERROR);
       setErrorMessage(message);
     } else {
+      setDraft(draftFor(lastJobRef.current));
       setStatus(AppStatus.IDLE);
       setMetadata(null);
       setResult(null);
@@ -136,6 +156,7 @@ export default function SquishApp() {
   const startCompression = async (file: File) => {
     const session = beginCompressionSession();
     setJobKind('compress');
+    lastJobRef.current = { kind: 'compress', file };
 
     setStatus(AppStatus.COMPRESSING);
     setProgressSnap(INITIAL_SNAPSHOT);
@@ -161,6 +182,7 @@ export default function SquishApp() {
   const startMergeAndCompress = async (files: File[]) => {
     const session = beginCompressionSession();
     setJobKind('merge');
+    lastJobRef.current = { kind: 'merge', files };
 
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
 
@@ -188,9 +210,10 @@ export default function SquishApp() {
     }
   };
 
-  const startTrimAndCompress = async (file: File, deleteSegments: TrimSegment[]) => {
+  const startTrimAndCompress = async (file: File, deleteSegments: TrimSegment[], rangeText: string) => {
     const session = beginCompressionSession();
     setJobKind('trim');
+    lastJobRef.current = { kind: 'trim', file, deleteSegments, rangeText };
 
     setStatus(AppStatus.COMPRESSING);
     setProgressSnap(INITIAL_SNAPSHOT);
@@ -213,6 +236,16 @@ export default function SquishApp() {
     }
   };
 
+  // The same files and ranges again, straight from the error screen.
+  const retryLastJob = () => {
+    const job = lastJobRef.current;
+    if (!job) return reset();
+    revokeOutputUrl();
+    if (job.kind === 'compress') void startCompression(job.file);
+    else if (job.kind === 'merge') void startMergeAndCompress(job.files);
+    else void startTrimAndCompress(job.file, job.deleteSegments, job.rangeText);
+  };
+
   const jobPhase =
     jobKind === 'merge' && progressSnap.progress < 0.35
       ? 'merging'
@@ -229,6 +262,8 @@ export default function SquishApp() {
         onMergeAndCompress={startMergeAndCompress}
         onTrimAndCompress={startTrimAndCompress}
         disabled={false}
+        initialMode={jobKind}
+        initialDraft={draft}
       />
     );
   } else if (status === AppStatus.COMPRESSING && metadata) {
@@ -242,13 +277,15 @@ export default function SquishApp() {
         wasmLoading={wasmLoading}
         phase={jobPhase}
         job={jobKind}
-        onCancel={handleCancel}
+        onCancel={backToFiles}
       />
     );
   } else if (status === AppStatus.DONE && result) {
-    content = <CompressionSuccess result={result} onReset={reset} />;
+    content = <CompressionSuccess result={result} job={jobKind} onReset={reset} />;
   } else if (status === AppStatus.ERROR) {
-    content = <CompressionError message={errorMessage} onRetry={reset} />;
+    content = (
+      <CompressionError message={errorMessage} job={jobKind} onRetry={retryLastJob} onChangeFiles={backToFiles} />
+    );
   }
 
   return (

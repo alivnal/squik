@@ -56,11 +56,14 @@ export function cancelWasmCompression(): void {
 }
 
 /** A long job usually finishes while the user is in another app; tell them. */
-function notifyIfInBackground(filename: string, size: number): void {
+function notifyIfInBackground(kind: NativeJob['kind'], result: { filename: string; compressedSize: number; skippedEncode: boolean }): void {
   if (document.hasFocus() || typeof Notification === 'undefined') return;
   const t = getI18nInstance().t.bind(getI18nInstance());
-  new Notification(`${t('success.titleBefore')} ${t('success.titleAccent')}`, {
-    body: `${filename} · ${formatBytes(size)}`,
+  // The same title the success screen shows.
+  const outcome = kind === 'compress' && result.skippedEncode ? 'fits' : kind;
+  const title = ['before', 'accent', 'after'].map((part) => t(`success.title.${outcome}.${part}`));
+  new Notification(`${title[0]} ${title[1]}${title[2]}`, {
+    body: `${result.filename} · ${formatBytes(result.compressedSize)}`,
     // Main plays the finish sound; a second chime from the banner would double it.
     silent: true,
   });
@@ -86,7 +89,7 @@ async function runNativeJob(job: NativeJob, options?: JobOptions): Promise<WebCo
   try {
     const result = await api.runJob(jobId, job);
     jobProgress.finish();
-    notifyIfInBackground(result.filename, result.compressedSize);
+    notifyIfInBackground(job.kind, result);
     return {
       ...result,
       outputPath: result.filename,
