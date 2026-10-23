@@ -319,11 +319,11 @@ export default function VideoSelector({
 
       <div className="tool-ui" data-ui="video-compressor">
         <div className="tool-ui-body">
-          {/* Each screen's h1 takes focus when the screen changes. */}
-          <div className="tool-heading">
-            <h1 tabIndex={-1}>{t(`landing.${mode}Headline`)}</h1>
-            <p>{t(`landing.${mode}SubtitleAfter`)}</p>
-          </div>
+          {/* Each screen's h1 takes focus when the screen changes. The card
+              shows no title; this one is for screen readers only. */}
+          <h1 tabIndex={-1} className="sr-only">
+            {t(`landing.${mode}Headline`)}
+          </h1>
 
           <div className="tool-tabs" data-ui="mode-controls" role="group" aria-label={t('landing.tools')}>
             {(['compress', 'merge', 'trim'] as const).map((tab) => (
@@ -462,8 +462,13 @@ export default function VideoSelector({
                 className={`drop-zone ${isDragActive ? 'is-dragging' : ''}`}
               >
                 <CompressOIcon name="addMedia" size={52} className="text-accent" />
-                <span className="drop-zone-title">
-                  {t('landing.dragDrop')}
+                {/* Phones and tablets can't drop a file, so there the title
+                    asks to choose one and the browse line goes. */}
+                <span className="drop-zone-title drop-zone-title-pointer">
+                  {t(`landing.drop.${mode}`)}
+                </span>
+                <span className="drop-zone-title drop-zone-title-touch">
+                  {t(`landing.choose.${mode}`)}
                 </span>
                 <span className="drop-zone-browse">
                   {mode === 'merge' ? t('landing.browseMultiple') : t('landing.browseSingle')}

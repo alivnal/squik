@@ -29,12 +29,21 @@
     "compressSubtitleAfter": "Choose a clip and let Squik handle the size.",
     "mergeSubtitleAfter": "Combine selected clips into one video.",
     "trimSubtitleAfter": "Choose what to remove, then keep the rest.",
-    "footerNote": "Made for quick video exports.",
     "dropAnywhere": "Drop your video to begin",
-    "dragDrop": "Drop a video here",
     "browseMultiple": "or choose multiple clips",
     "browseSingle": "or choose a file",
-    "formats": "MP4 · MOV · WebM · MKV"
+    "formats": "MP4 · MOV · WebM · MKV",
+    "privacyNote": "Your video never leaves this device.",
+    "drop": {
+      "compress": "Drop a video to squish",
+      "merge": "Drop the clips to merge",
+      "trim": "Drop a video to trim"
+    },
+    "choose": {
+      "compress": "Choose a video to squish",
+      "merge": "Choose clips to merge",
+      "trim": "Choose a video to trim"
+    }
   },
   "trim": {
     "pickVideoFirst": "Pick a video first.",

@@ -29,12 +29,21 @@
     "compressSubtitleAfter": "Videonu seç, boyutunu Squik'e bırak.",
     "mergeSubtitleAfter": "Seçtiğin klipleri tek videoda birleştir.",
     "trimSubtitleAfter": "Çıkarmak istediğin bölümleri seç, gerisini koru.",
-    "footerNote": "Hızlı video çıktıları için.",
     "dropAnywhere": "Başlamak için videonu bırak",
-    "dragDrop": "Videoyu buraya bırak",
     "browseMultiple": "veya birden fazla klip seç",
     "browseSingle": "veya dosya seç",
-    "formats": "MP4 · MOV · WebM · MKV"
+    "formats": "MP4 · MOV · WebM · MKV",
+    "privacyNote": "Videon bu cihazdan hiç çıkmaz.",
+    "drop": {
+      "compress": "Sıkıştırmak için video bırak",
+      "merge": "Birleştirmek için klipleri bırak",
+      "trim": "Kırpmak için video bırak"
+    },
+    "choose": {
+      "compress": "Sıkıştırmak için video seç",
+      "merge": "Birleştirmek için klip seç",
+      "trim": "Kırpmak için video seç"
+    }
   },
   "trim": {
     "pickVideoFirst": "Önce bir video seçin.",

@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import MaterialIcon from './MaterialIcon';
 
 export default function AppFooter() {
   const { t } = useTranslation();
@@ -21,7 +22,11 @@ export default function AppFooter() {
       >
         ali ünal
       </a>
-      <p className="app-site-footer-credit">Squik · {t('landing.footerNote')}</p>
+      {/* Shown on every screen, a running job's too, where the promise matters most. */}
+      <p className="app-site-footer-credit">
+        <MaterialIcon name="lock" size={16} />
+        {t('landing.privacyNote')}
+      </p>
     </footer>
   );
 }
