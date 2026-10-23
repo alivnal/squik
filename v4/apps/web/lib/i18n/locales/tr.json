@@ -50,9 +50,13 @@
     "rangesLabel": "Silinecek bölümler",
     "rangesHint": "Örn. 00:30 - 01:15. Geri kalanı korunur.",
     "rangesPlaceholder": "00:30 - 01:15\n02:00 - 03:30",
-    "parsedRanges": "{{count}} aralık hazır",
     "change": "Değiştir",
-    "lengthLabel": "Süre"
+    "lengthLabel": "Süre",
+    "summary_one": "1 bölüm silinecek · kalan {{kept}} / {{total}}",
+    "summary_other": "{{count}} bölüm silinecek · kalan {{kept}} / {{total}}",
+    "lineFormat": "{{line}}. satır: 00:30 - 01:15 biçiminde yazın.",
+    "lineOrder": "{{line}}. satır: bitiş, başlangıçtan önce.",
+    "linePastEnd": "{{line}}. satır: {{time}}, videonun sonundan ({{duration}}) sonra."
   },
   "merge": {
     "clips": "Birleştirilecek klipler",

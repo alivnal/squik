@@ -50,9 +50,13 @@
     "rangesLabel": "Sections to delete",
     "rangesHint": "e.g. 00:30 - 01:15. Everything else is kept.",
     "rangesPlaceholder": "00:30 - 01:15\n02:00 - 03:30",
-    "parsedRanges": "{{count}} range(s) ready",
     "change": "Change",
-    "lengthLabel": "Length"
+    "lengthLabel": "Length",
+    "summary_one": "1 section to remove · {{kept}} of {{total}} left",
+    "summary_other": "{{count}} sections to remove · {{kept}} of {{total}} left",
+    "lineFormat": "Line {{line}}: write it as 00:30 - 01:15.",
+    "lineOrder": "Line {{line}}: the end comes before the start.",
+    "linePastEnd": "Line {{line}}: {{time}} is past the end ({{duration}})."
   },
   "merge": {
     "clips": "Clips to merge",

@@ -10,7 +10,10 @@ import { useTranslation } from 'react-i18next';
 import {
   formatBytes,
   formatTimestamp,
+  mergeTrimSegments,
   parseDeleteRangeText,
+  parseTimestampToSeconds,
+  totalKeepDuration,
   validateDeleteSegments,
   type TrimSegment,
 } from '@/lib/squish-core';
@@ -54,6 +57,47 @@ function isVideoFile(file: File): boolean {
 
 function clipKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+type RangeIssue =
+  | { key: 'trim.lineFormat' | 'trim.lineOrder'; line: number }
+  | { key: 'trim.linePastEnd'; line: number; time: string };
+
+// Checks the typed ranges line by line as they are typed, so a mistake is
+// named with its line before the job starts. Reads lines the same way
+// parseDeleteRangeText does; line numbers count blank lines, as the box shows.
+function checkRangeLines(
+  text: string,
+  durationSec: number,
+): { segments: TrimSegment[]; issue: RangeIssue | null } {
+  const segments: TrimSegment[] = [];
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) continue;
+    const line = i + 1;
+    const match = trimmed.match(/^(.+?)\s*[-–]\s*(.+)$/);
+    const start = match ? parseTimestampToSeconds(match[1]) : null;
+    const end = match ? parseTimestampToSeconds(match[2]) : null;
+    if (!match || start === null || end === null || start < 0) {
+      return { segments, issue: { key: 'trim.lineFormat', line } };
+    }
+    if (start >= end) return { segments, issue: { key: 'trim.lineOrder', line } };
+    if (end > durationSec) {
+      return { segments, issue: { key: 'trim.linePastEnd', line, time: match[2].trim() } };
+    }
+    segments.push({ startSec: start, endSec: end });
+  }
+  return { segments, issue: null };
+}
+
+// An example range that fits the chosen video: from a quarter to halfway in.
+function placeholderRange(durationSec: number): string | null {
+  const whole = Math.floor(durationSec);
+  if (whole < 2) return null;
+  const start = Math.floor(whole / 4);
+  const end = Math.max(start + 1, Math.floor(whole / 2));
+  return `${formatTimestamp(start)} - ${formatTimestamp(end)}`;
 }
 
 export default function VideoSelector({
@@ -283,16 +327,41 @@ export default function VideoSelector({
     setError(null);
   };
 
-  let parsedRangeCount = 0;
-  if (mode === 'trim' && rangeText.trim() && trimDurationSec != null) {
-    try {
-      const segments = parseDeleteRangeText(rangeText);
-      if (validateDeleteSegments(segments, trimDurationSec) === null) {
-        parsedRangeCount = segments.length;
-      }
-    } catch {
-      parsedRangeCount = 0;
-    }
+  // What the typed ranges amount to: the first mistake, or the sections that
+  // go and how much is left. Overlapping ranges count as one section.
+  const rangeCheck =
+    mode === 'trim' && trimDurationSec != null && rangeText.trim()
+      ? checkRangeLines(rangeText, trimDurationSec)
+      : null;
+  const removedSections =
+    rangeCheck && !rangeCheck.issue ? mergeTrimSegments(rangeCheck.segments) : [];
+  const nothingLeft =
+    trimDurationSec != null &&
+    removedSections.length > 0 &&
+    validateDeleteSegments(removedSections, trimDurationSec) === 'nothingLeft';
+  let rangeStatus: { text: string; tone: 'hint' | 'ready' | 'error' } = {
+    text: t('trim.rangesHint'),
+    tone: 'hint',
+  };
+  if (rangeCheck?.issue) {
+    rangeStatus = {
+      text: t(rangeCheck.issue.key, {
+        ...rangeCheck.issue,
+        duration: formatTimestamp(trimDurationSec ?? 0),
+      }),
+      tone: 'error',
+    };
+  } else if (nothingLeft) {
+    rangeStatus = { text: t('errors.trimRangeNothingLeft'), tone: 'error' };
+  } else if (removedSections.length > 0 && trimDurationSec != null) {
+    rangeStatus = {
+      text: t('trim.summary', {
+        count: removedSections.length,
+        kept: formatTimestamp(totalKeepDuration(removedSections, trimDurationSec)),
+        total: formatTimestamp(trimDurationSec),
+      }),
+      tone: 'ready',
+    };
   }
 
   return (
@@ -380,9 +449,27 @@ export default function VideoSelector({
                     setRangeText(e.target.value);
                     setError(null);
                   }}
-                  placeholder={t('trim.rangesPlaceholder')}
+                  placeholder={
+                    (trimDurationSec != null && placeholderRange(trimDurationSec)) ||
+                    t('trim.rangesPlaceholder')
+                  }
                   className="trim-input"
                 />
+                {trimDurationSec != null && trimDurationSec > 0 && (
+                  // The whole video as a bar, with the sections that go marked;
+                  // the summary line says the same in words.
+                  <div className="trim-strip" aria-hidden="true">
+                    {removedSections.map((section) => (
+                      <span
+                        key={`${section.startSec}-${section.endSec}`}
+                        style={{
+                          left: `${(section.startSec / trimDurationSec) * 100}%`,
+                          width: `${((section.endSec - section.startSec) / trimDurationSec) * 100}%`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ) : mode === 'merge' && clips.length > 0 ? (
@@ -480,18 +567,18 @@ export default function VideoSelector({
 
           {mode === 'trim' && trimVideo && (
             <div className="tray-footer">
-              {parsedRangeCount > 0 ? (
-                <p id="trim-ranges-hint" className="tray-summary is-ready">
-                  {t('trim.parsedRanges', { count: parsedRangeCount })}
-                </p>
-              ) : (
-                <p id="trim-ranges-hint" className="tray-summary">
-                  {t('trim.rangesHint')}
-                </p>
-              )}
+              <p
+                id="trim-ranges-hint"
+                aria-live="polite"
+                className={`tray-summary ${rangeStatus.tone === 'hint' ? '' : `is-${rangeStatus.tone}`}`}
+              >
+                {rangeStatus.text}
+              </p>
               <button
                 type="button"
-                disabled={disabled || trimProbing || trimDurationSec == null}
+                // A named mistake blocks the job: parseDeleteRangeText would
+                // otherwise drop that line silently and trim the rest.
+                disabled={disabled || trimProbing || trimDurationSec == null || rangeStatus.tone === 'error'}
                 onClick={handleTrim}
                 className="pixel-btn"
               >

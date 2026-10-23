@@ -1160,8 +1160,10 @@ h1[tabindex="-1"]:focus {
   background: var(--color-surface);
   color: var(--color-ink);
   font: inherit;
-  font-size: 0.875rem;
+  /* 16px, or iOS zooms the page when the box takes focus. */
+  font-size: 1rem;
   line-height: 1.35;
+  font-variant-numeric: tabular-nums;
 }
 
 .trim-input:focus-visible {
@@ -1176,6 +1178,17 @@ h1[tabindex="-1"]:focus {
   gap: 1rem;
 }
 
+/* The summary wraps; the button keeps its label on one line. */
+.tray-footer .tray-summary {
+  flex: 1;
+  min-width: 0;
+}
+
+.tray-footer .pixel-btn {
+  flex: none;
+  white-space: nowrap;
+}
+
 .tray-summary {
   margin: 0;
   color: var(--color-muted);
@@ -1186,6 +1199,28 @@ h1[tabindex="-1"]:focus {
 .tray-summary.is-ready {
   color: var(--color-accent);
   font-weight: 600;
+}
+
+.tray-summary.is-error {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+/* The whole video; the sections that go sit on it in the error colour. */
+.trim-strip {
+  position: relative;
+  flex: none;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--color-gray-300);
+}
+
+.trim-strip > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--color-error);
 }
 .clip-control {
   display: inline-flex;
@@ -1624,7 +1659,10 @@ h1[tabindex="-1"]:focus {
     --bento-height: 9.25rem;
   }
 
+  /* Taller than merge here, so the ranges box shows three lines of 16px
+     text above the strip; the drop zone is taller still. */
   .trim-bento {
+    --bento-height: 11.5rem;
     grid-template-rows: 3rem minmax(0, 1fr);
   }
 }
@@ -1699,5 +1737,29 @@ h1[tabindex="-1"]:focus {
 
   .trim-file {
     grid-column: auto;
+  }
+}
+
+/* Phones and tablets: two clips a row with taller rows, so each clip's
+   controls are big enough for a finger. Half-width tiles drop the size;
+   the tray's summary line gives the total. Last, to win over the
+   narrow-screen tray height above. */
+@media (hover: none) and (pointer: coarse) {
+  .merge-bento {
+    --bento-height: 12rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .merge-tile .clip-control {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .merge-tile:not(.is-lead) .merge-tile-size {
+    display: none;
+  }
+
+  .merge-tile:not(.is-lead) .merge-tile-foot {
+    justify-content: flex-end;
   }
 }
