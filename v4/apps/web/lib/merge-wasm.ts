@@ -261,7 +261,11 @@ export async function mergeVideosWasm(
     if (isCancelled?.()) throw new CompressionCancelledError();
     if (code !== 0) {
       const detail = diagnostics.slice(-5).join(' | ');
-      throw new Error(detail ? `${t('errors.mergeFailed')} ${detail}` : t('errors.mergeFailed'));
+      throw new Error(
+        detail
+          ? `${t('errors.mergeFailed')} ${t('errors.encodingFailedDetails').replace('{{details}}', detail)}`
+          : t('errors.mergeFailed'),
+      );
     }
 
     // ── Phase 4: pass the intermediate directly to compression ──────────

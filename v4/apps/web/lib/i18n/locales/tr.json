@@ -67,7 +67,8 @@
     "unreadable": "Okunamadı",
     "checking": "Kontrol ediliyor…",
     "moved": "{{name}}, {{count}} klip içinde {{position}}. sıraya taşındı",
-    "removed": "{{name}} kaldırıldı"
+    "removed": "{{name}} kaldırıldı",
+    "needOneMore": "1 klip · {{size}}. Birleştirmek için bir tane daha ekle."
   },
   "errors": {
     "invalidFile": "Desteklenen bir video dosyası seç (MP4, MOV, WebM, MKV).",
@@ -77,11 +78,11 @@
     "bridgeFailed": "Masaüstü köprüsü yüklenemedi. Uygulamayı yeniden yükle.",
     "mergeMinTwo": "Birleştirmek için en az iki video seç.",
     "metadataReadFailed": "Video meta verileri okunamadı. Dosya bozuk veya desteklenmiyor olabilir.",
-    "encodingFailed": "FFmpeg kodlaması başarısız oldu. Dosya tarayıcın için çok büyük olabilir.",
-    "encodingFailedDetails": "FFmpeg ayrıntıları: {{details}}",
+    "encodingFailed": "Kodlayıcı bu videoda durdu. Tekrar dene; yine durursa başka bir dosya ya da masaüstü uygulamasını dene.",
+    "encodingFailedDetails": "Ayrıntılar: {{details}}",
     "encodingMemoryFailed": "Video kodlanırken tarayıcının belleği yetmedi. Daha kısa veya düşük çözünürlüklü bir video dene ya da masaüstü uygulamasını kullan.",
     "largeFileInputUnsupported": "Tarayıcın bu videoyu kodlayıcıya aktaramıyor. Başka bir tarayıcı ya da daha küçük bir dosya dene.",
-    "mergeFailed": "FFmpeg birleştirmesi başarısız oldu. Klipler tarayıcın için çok büyük olabilir.",
+    "mergeFailed": "Birleştirme bu kliplerde durdu. Tekrar dene; yine durursa klipleri kontrol et ya da masaüstü uygulamasını dene.",
     "trimProbeFailed": "Video süresi okunamadı. Başka bir dosya dene.",
     "trimRangeEmpty": "Silinecek en az bir zaman aralığı gir.",
     "trimRangeInvalid": "Bir veya daha fazla aralık geçersiz. Format: 00:30 - 01:15",

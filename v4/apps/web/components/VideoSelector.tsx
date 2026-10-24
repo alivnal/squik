@@ -60,6 +60,9 @@ function clipKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`;
 }
 
+// How long typing has to pause before a mistake in the ranges is shown.
+const RANGE_ERROR_DELAY_MS = 900;
+
 type RangeIssue =
   | { key: 'trim.lineFormat' | 'trim.lineOrder'; line: number }
   | { key: 'trim.linePastEnd'; line: number; time: string };
@@ -127,6 +130,13 @@ export default function VideoSelector({
   // Said aloud to screen readers only: tray moves and removals, and the trim
   // status once typing pauses.
   const [trayNotice, setTrayNotice] = useState('');
+  // A mistake in the ranges shows once typing pauses or the box is left, so
+  // a half-typed "00:10 - 00:2" isn't flagged mid-word.
+  const [rangeErrorShown, setRangeErrorShown] = useState(true);
+  useEffect(() => {
+    const id = window.setTimeout(() => setRangeErrorShown(true), RANGE_ERROR_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [rangeText]);
   const pendingFocusRef = useRef<
     { kind: 'move'; id: string; control: 'earlier' | 'later' } | { kind: 'remove'; index: number } | null
   >(null);
@@ -348,6 +358,12 @@ export default function VideoSelector({
       setError(t('errors.trimProbeFailed'));
       return;
     }
+    // A named mistake blocks the job, shown at once if it was still held back:
+    // parseDeleteRangeText would otherwise drop that line and trim the rest.
+    if (rangeStatus.tone === 'error') {
+      setRangeErrorShown(true);
+      return;
+    }
 
     if (!rangeText.trim()) {
       setError(t('errors.trimRangeEmpty'));
@@ -438,9 +454,14 @@ export default function VideoSelector({
     };
   }
 
+  const shownStatus =
+    rangeStatus.tone === 'error' && !rangeErrorShown
+      ? { text: t('trim.rangesHint'), tone: 'hint' as const }
+      : rangeStatus;
+
   // The trim status reaches screen readers once typing pauses, not on every
-  // keystroke (half-typed times read as errors); a submit error goes at once.
-  const trimStatusText = mode === 'trim' && trimVideo ? (error ?? rangeStatus.text) : '';
+  // keystroke; a submit error goes at once.
+  const trimStatusText = mode === 'trim' && trimVideo ? (error ?? shownStatus.text) : '';
   useEffect(() => {
     if (!trimStatusText) return;
     if (error) {
@@ -533,12 +554,14 @@ export default function VideoSelector({
                   id="trim-ranges"
                   value={rangeText}
                   aria-describedby="trim-ranges-hint"
-                  aria-invalid={rangeStatus.tone === 'error'}
+                  aria-invalid={shownStatus.tone === 'error'}
                   disabled={disabled || trimProbing}
                   onChange={(e) => {
                     setRangeText(e.target.value);
+                    setRangeErrorShown(false);
                     setError(null);
                   }}
+                  onBlur={() => setRangeErrorShown(true)}
                   placeholder={
                     (trimDurationSec != null && placeholderRange(trimDurationSec)) ||
                     t('trim.rangesPlaceholder')
@@ -685,15 +708,13 @@ export default function VideoSelector({
                   the card keeps its height. */}
               <p
                 id="trim-ranges-hint"
-                className={`tray-summary ${error ? 'is-error' : rangeStatus.tone === 'hint' ? '' : `is-${rangeStatus.tone}`}`}
+                className={`tray-summary ${error ? 'is-error' : shownStatus.tone === 'hint' ? '' : `is-${shownStatus.tone}`}`}
               >
-                {error ?? rangeStatus.text}
+                {error ?? shownStatus.text}
               </p>
               <button
                 type="button"
-                // A named mistake blocks the job: parseDeleteRangeText would
-                // otherwise drop that line silently and trim the rest.
-                disabled={disabled || trimProbing || trimDurationSec == null || rangeStatus.tone === 'error'}
+                disabled={disabled || trimProbing || trimDurationSec == null}
                 onClick={handleTrim}
                 className="pixel-btn"
               >
@@ -708,7 +729,8 @@ export default function VideoSelector({
                 {error ??
                   (unreadableClip
                     ? t('errors.unreadableClip', { name: unreadableClip.file.name })
-                    : t('merge.summary', {
+                    : // One clip can't be merged; the line says why Merge waits.
+                      t(clips.length === 1 ? 'merge.needOneMore' : 'merge.summary', {
                         count: clips.length,
                         size: formatBytes(clips.reduce((sum, clip) => sum + clip.file.size, 0), 1),
                       }))}

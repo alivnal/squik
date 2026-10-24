@@ -67,7 +67,8 @@
     "unreadable": "Can't read",
     "checking": "Checking…",
     "moved": "{{name}} moved to position {{position}} of {{count}}",
-    "removed": "{{name}} removed"
+    "removed": "{{name}} removed",
+    "needOneMore": "1 clip · {{size}}. Add one more to merge."
   },
   "errors": {
     "invalidFile": "Please choose a supported video file (MP4, MOV, WebM, MKV).",
@@ -79,11 +80,11 @@
     "dropPathFailed": "Could not read dropped file path.",
     "mergeMinTwo": "Select at least two videos to merge.",
     "metadataReadFailed": "Could not read video metadata. The file may be corrupt or unsupported.",
-    "encodingFailed": "FFmpeg encoding failed. The file may be too large for your browser.",
-    "encodingFailedDetails": "FFmpeg details: {{details}}",
+    "encodingFailed": "The encoder stopped on this video. Try again; if it stops again, try another file or the desktop app.",
+    "encodingFailedDetails": "Details: {{details}}",
     "encodingMemoryFailed": "Your browser ran out of memory while encoding this video. Try a shorter or lower-resolution video, or use the desktop app.",
     "largeFileInputUnsupported": "Your browser cannot stream this video into the encoder. Try a different browser or a smaller file.",
-    "mergeFailed": "FFmpeg merge failed. Clips may be too large for your browser.",
+    "mergeFailed": "Merging stopped on these clips. Try again; if it stops again, check the clips or try the desktop app.",
     "trimProbeFailed": "Could not read video duration. Please try a different file.",
     "trimRangeEmpty": "Enter at least one time range to delete.",
     "trimRangeInvalid": "One or more ranges are invalid. Use format: 00:30 - 01:15",
