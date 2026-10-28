@@ -1,4 +1,4 @@
-# 200mb — Video Compressor (Squish)
+# squik
 
 Monorepo for browser and desktop video compression under 200 MB.
 
