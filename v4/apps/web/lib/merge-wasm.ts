@@ -112,6 +112,8 @@ export async function mergeVideosWasm(
     onProgress?: (progress: number) => void;
     onLoadProgress?: (progress: number) => void;
     isCancelled?: () => boolean;
+    /** Sees every clip's probe before anything is merged; throw to stop the job there. */
+    beforeMerge?: (probes: VideoProbeMetadata[]) => void;
   },
 ): Promise<{
   ffmpeg: FFmpeg;
@@ -124,7 +126,7 @@ export async function mergeVideosWasm(
     throw new Error(t('errors.mergeMinTwo'));
   }
 
-  const { onProgress, onLoadProgress, isCancelled } = options ?? {};
+  const { onProgress, onLoadProgress, isCancelled, beforeMerge } = options ?? {};
   const totalInputSize = files.reduce((s, f) => s + f.size, 0);
 
   // ── Phase 1: load FFmpeg + probe all files in parallel ──────────────
@@ -134,6 +136,7 @@ export async function mergeVideosWasm(
     ...files.map((f) => probeVideoFile(f)),
   ]);
   if (isCancelled?.()) throw new CompressionCancelledError();
+  beforeMerge?.(probes);
 
   const inputNames: string[] = [];
   const hasAudio: boolean[] = [];

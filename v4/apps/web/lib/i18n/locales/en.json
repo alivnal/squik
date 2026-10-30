@@ -8,22 +8,21 @@
     "name": "Squik"
   },
   "meta": {
-    "description": "Compress, merge, and trim videos under 200 MB — entirely in your browser."
+    "description": "Compress, merge, and trim videos under 200 MB — entirely in your browser."
   },
   "common": {
     "compress": "Compress",
     "merge": "Merge",
     "trim": "Trim",
     "tryAgain": "Try again",
-    "targetUnderMb": "Target: under 200 MB",
-    "originalTarget": "Original: {{size}} · Target: under 200 MB",
-    "mbLimit": "200 MB",
+    "targetUnderMb": "Target: under {{limit}} MB",
+    "originalTarget": "Original: {{size}} · Target: under {{limit}} MB",
     "trimAndCompress": "Trim & compress",
     "changeFiles": "Change files",
     "original": "Original: {{size}}"
   },
   "landing": {
-    "compressHeadline": "Videos under 200 MB",
+    "compressHeadline": "Videos under {{limit}} MB",
     "mergeHeadline": "Bring your clips together",
     "trimHeadline": "Keep the best parts",
     "tools": "Video tools",
@@ -31,8 +30,8 @@
     "mergeSubtitleAfter": "Combine selected clips into one video.",
     "trimSubtitleAfter": "Choose what to remove, then keep the rest.",
     "dropAnywhere": "Drop your video to begin",
-    "browseMultiple": "or choose several clips (MP4, MOV, WebM, MKV)",
-    "browseSingle": "or choose a file (MP4, MOV, WebM, MKV)",
+    "browseMultiple": "or choose several clips",
+    "browseSingle": "or choose a file",
     "privacyNote": "Your video never leaves this device.",
     "drop": {
       "compress": "Drop a video to squish",
@@ -44,7 +43,8 @@
       "merge": "Choose clips to merge",
       "trim": "Choose a video to trim"
     },
-    "promise": "Under 200 MB · stays on this device"
+    "promise": "Stays on this device",
+    "formats": "MP4 · MOV · WebM · MKV"
   },
   "trim": {
     "pickVideoFirst": "Pick a video first.",
@@ -95,10 +95,10 @@
       "merge": "Merge failed",
       "trim": "Trim failed"
     },
-    "tooLargeToFit": "This video is too long or too large to fit under 200 MB. Try a shorter clip or a lower-resolution source.",
+    "tooLargeToFit": "This video is too long or too large to fit the chosen size. Try a bigger size, a shorter clip or a lower-resolution source.",
     "unreadableFile": "{{name}} can't be read. It may be damaged or in a format that can't be opened here.",
     "unreadableClip": "{{name}} can't be read. Remove it to merge the rest.",
-    "encoderDownloadFailed": "Couldn't download the encoder (~25 MB). Check your connection and try again.",
+    "encoderDownloadFailed": "Couldn't download the encoder (~25 MB). Check your connection and try again.",
     "trimLengthUnknown": "Couldn't tell how long {{name}} is, so it can't be trimmed here. Compress and merge still work with it."
   },
   "a11y": {
@@ -126,7 +126,7 @@
     "compressingVideo": "Compressing video…",
     "elapsed": "Elapsed {{time}}",
     "encoding": "Encoding {{time}}",
-    "wasmHint": "First visit downloads ~25 MB of encoder code.",
+    "wasmHint": "First visit downloads ~25 MB of encoder code.",
     "keepTabOpen": "Keep this tab open — progress tracks each stage of the job.",
     "keepWindowOpen": "Keep this window open — progress tracks each stage of the job.",
     "cancel": "Cancel",
@@ -156,7 +156,7 @@
       },
       "fits": {
         "before": "Already",
-        "accent": "under 200 MB",
+        "accent": "under {{limit}} MB",
         "after": ""
       },
       "merge": {
@@ -171,12 +171,12 @@
       }
     },
     "description": {
-      "compress": "Ready to share: it fits the 200 MB limit.",
+      "compress": "Ready to share: it fits under {{limit}} MB.",
       "fits": "It already fit, so it was left untouched: same file, full quality.",
-      "merge_one": "{{count}} clip turned into one video under 200 MB.",
-      "merge_other": "{{count}} clips joined into one video under 200 MB.",
-      "trim_one": "Removed 1 section. The video fits under 200 MB.",
-      "trim_other": "Removed {{count}} sections. The video fits under 200 MB."
+      "merge_one": "{{count}} clip turned into one video under {{limit}} MB.",
+      "merge_other": "{{count}} clips joined into one video under {{limit}} MB.",
+      "trim_one": "Removed 1 section. The video fits under {{limit}} MB.",
+      "trim_other": "Removed {{count}} sections. The video fits under {{limit}} MB."
     },
     "size": "Size",
     "limit": "Limit",
@@ -205,5 +205,15 @@
   },
   "footer": {
     "text": "Made with <heart/> by <channel>Squik</channel>"
+  },
+  "target": {
+    "under": "Under {{size}} MB",
+    "buttonLabel": "Target size: under {{size}} MB. Change",
+    "title": "Target size",
+    "presets": "Sizes",
+    "custom": "Your own size",
+    "apply": "Use",
+    "note": "Smaller sizes mean lower quality, and very small ones also shrink the picture.",
+    "short": "{{size}} MB"
   }
 }

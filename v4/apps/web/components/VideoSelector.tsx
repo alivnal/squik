@@ -21,6 +21,9 @@ import { probeVideoFile } from '@/lib/compress-wasm';
 import { useFlipList } from '@/hooks/useFlipList';
 import CompressOIcon from './CompressOIcon';
 import FileName from './FileName';
+import PixelText from './PixelText';
+import { PixelDots, PixelWait } from './PixelLoaders';
+import TargetSize from './TargetSize';
 import MaterialIcon from './MaterialIcon';
 import PanelMascot from './mascot/PanelMascot';
 import SquikHero from './SquikHero';
@@ -50,6 +53,9 @@ interface VideoSelectorProps {
   /** The tab to open on: the last job's, so "Trim Another" lands in Trim. */
   initialMode?: SelectorMode;
   initialDraft?: SelectorDraft;
+  /** The size every job aims under, in MB, and how to change it. */
+  targetMb: number;
+  onTargetChange: (mb: number) => void;
 }
 
 function isVideoFile(file: File): boolean {
@@ -111,8 +117,10 @@ export default function VideoSelector({
   disabled = false,
   initialMode = 'compress',
   initialDraft,
+  targetMb,
+  onTargetChange,
 }: VideoSelectorProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<SelectorMode>(initialMode);
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -499,7 +507,7 @@ export default function VideoSelector({
           {/* Each screen's h1 takes focus when the screen changes. The card
               shows no title; this one is for screen readers only. */}
           <h1 tabIndex={-1} className="sr-only">
-            {t(`landing.${mode}Headline`)}
+            {t(`landing.${mode}Headline`, { limit: targetMb })}
           </h1>
 
           <div className="tool-tabs" data-ui="mode-controls" role="group" aria-label={t('landing.tools')}>
@@ -543,7 +551,7 @@ export default function VideoSelector({
               <div className="bento-tile trim-length">
                 <span className="trim-caption">{t('trim.lengthLabel')}</span>
                 <span className="trim-length-value">
-                  {trimProbing || trimDurationSec == null ? '…' : formatTimestamp(trimDurationSec)}
+                  {trimProbing || trimDurationSec == null ? <PixelWait className="trim-length-wait" /> : formatTimestamp(trimDurationSec)}
                 </span>
               </div>
               <div className="bento-tile trim-ranges">
@@ -616,7 +624,7 @@ export default function VideoSelector({
                         ? t('merge.unreadable')
                         : clipHealth[clip.id] === 'checking'
                           ? t('merge.checking')
-                          : formatBytes(clip.file.size, 1)}
+                          : formatBytes(clip.file.size, 0, i18n.language)}
                     </span>
                     <div className="merge-tile-controls">
                       <button
@@ -672,25 +680,30 @@ export default function VideoSelector({
                 onClick={handleZoneClick}
                 className={`drop-zone ${isDragActive ? 'is-dragging' : ''} ${error ? 'has-error' : ''}`}
               >
-                <CompressOIcon name="addMedia" size={52} className="text-accent" />
+                {checkingFile ? (
+                  <PixelDots size="lg" />
+                ) : (
+                  <CompressOIcon name="addMedia" size={52} className="text-accent" />
+                )}
                 {/* Phones and tablets can't drop a file, so there the title
                     asks to choose one and the browse line goes. */}
-                <span className="drop-zone-title drop-zone-title-pointer">
-                  {t(`landing.drop.${mode}`)}
-                </span>
-                <span className="drop-zone-title drop-zone-title-touch">
-                  {t(`landing.choose.${mode}`)}
-                </span>
+                <PixelText className="drop-zone-title drop-zone-title-pointer" parts={t(`landing.drop.${mode}`)} />
+                <PixelText className="drop-zone-title drop-zone-title-touch" parts={t(`landing.choose.${mode}`)} />
                 <span className="drop-zone-browse">
                   {mode === 'merge' ? t('landing.browseMultiple') : t('landing.browseSingle')}
                 </span>
-                {/* The product's promise, on the first screen at every size:
-                    the limit and that nothing is uploaded. */}
+                <span className="drop-zone-formats">{t('landing.formats')}</span>
+              </button>
+              {/* The zone's foot, laid over it rather than below, so the card
+                  keeps its height: nothing is uploaded on the left, the size
+                  jobs aim under on the right, clear of the centred content. */}
+              <div className="drop-zone-foot">
                 <span className="drop-zone-promise">
                   <MaterialIcon name="lock" size={14} />
-                  {t('landing.promise')}
+                  <span className="drop-zone-promise-text">{t('landing.promise')}</span>
                 </span>
-              </button>
+                <TargetSize valueMb={targetMb} onChange={onTargetChange} disabled={disabled || checkingFile} />
+              </div>
               {error && (
                 // Over the foot of the drop zone rather than below it, so the
                 // card keeps its height and doesn't jump.
@@ -712,14 +725,17 @@ export default function VideoSelector({
               >
                 {error ?? shownStatus.text}
               </p>
-              <button
-                type="button"
-                disabled={disabled || trimProbing || trimDurationSec == null}
-                onClick={handleTrim}
-                className="pixel-btn"
-              >
-                {t('common.trimAndCompress')}
-              </button>
+              <div className="tray-actions">
+                <TargetSize valueMb={targetMb} onChange={onTargetChange} disabled={disabled} />
+                <button
+                  type="button"
+                  disabled={disabled || trimProbing || trimDurationSec == null}
+                  onClick={handleTrim}
+                  className="pixel-btn"
+                >
+                  {t('common.trimAndCompress')}
+                </button>
+              </div>
             </div>
           )}
 
@@ -732,17 +748,20 @@ export default function VideoSelector({
                     : // One clip can't be merged; the line says why Merge waits.
                       t(clips.length === 1 ? 'merge.needOneMore' : 'merge.summary', {
                         count: clips.length,
-                        size: formatBytes(clips.reduce((sum, clip) => sum + clip.file.size, 0), 1),
+                        size: formatBytes(clips.reduce((sum, clip) => sum + clip.file.size, 0), 1, i18n.language),
                       }))}
               </p>
-              <button
-                type="button"
-                disabled={disabled || !clipsReady}
-                onClick={handleMerge}
-                className="pixel-btn"
-              >
-                {t('common.merge')}
-              </button>
+              <div className="tray-actions">
+                <TargetSize valueMb={targetMb} onChange={onTargetChange} disabled={disabled} />
+                <button
+                  type="button"
+                  disabled={disabled || !clipsReady}
+                  onClick={handleMerge}
+                  className="pixel-btn"
+                >
+                  {t('common.merge')}
+                </button>
+              </div>
             </div>
           )}
           <p className="sr-only" aria-live="polite">

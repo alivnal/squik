@@ -100,11 +100,21 @@ async function assertVideoPath(path: unknown): Promise<string> {
   return path;
 }
 
+/** A size cap from the page: a positive finite byte count, or none (the default cap). */
+function assertMaxOutputBytes(value: unknown): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw new Error('Invalid size limit.');
+  }
+  return value;
+}
+
 async function assertJob(job: unknown): Promise<NativeJob> {
   const value = job as Partial<NativeJob> | null;
-  if (value?.kind === 'compress') return { kind: 'compress', path: await assertVideoPath(value.path) };
+  const maxOutputBytes = assertMaxOutputBytes(value?.maxOutputBytes);
+  if (value?.kind === 'compress') return { kind: 'compress', path: await assertVideoPath(value.path), maxOutputBytes };
   if (value?.kind === 'merge' && Array.isArray(value.paths)) {
-    return { kind: 'merge', paths: await Promise.all(value.paths.map(assertVideoPath)) };
+    return { kind: 'merge', paths: await Promise.all(value.paths.map(assertVideoPath)), maxOutputBytes };
   }
   if (value?.kind === 'trim' && Array.isArray(value.deleteSegments)) {
     const deleteSegments = value.deleteSegments.map((segment) => ({
@@ -114,7 +124,7 @@ async function assertJob(job: unknown): Promise<NativeJob> {
     if (deleteSegments.some((segment) => !Number.isFinite(segment.startSec) || !Number.isFinite(segment.endSec))) {
       throw new Error('Invalid trim ranges.');
     }
-    return { kind: 'trim', path: await assertVideoPath(value.path), deleteSegments };
+    return { kind: 'trim', path: await assertVideoPath(value.path), deleteSegments, maxOutputBytes };
   }
   throw new Error('Invalid job.');
 }

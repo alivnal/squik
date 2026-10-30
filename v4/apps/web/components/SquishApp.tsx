@@ -7,13 +7,14 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppStatus, type TrimSegment, type VideoMetadata, type WebCompressionResult } from '@/lib/squish-core';
+import { OutputTooLargeError, MAX_OUTPUT_BYTES, AppStatus, type TrimSegment, type VideoMetadata, type WebCompressionResult } from '@/lib/squish-core';
 import AppShell from '@/components/AppShell';
 import ScreenTransition from '@/components/ScreenTransition';
 import VideoSelector, { type SelectorDraft } from '@/components/VideoSelector';
 import CompressionStatus from '@/components/CompressionStatus';
 import CompressionSuccess from '@/components/CompressionSuccess';
 import CompressionError from '@/components/CompressionError';
+import { DEFAULT_TARGET_MB, capBytesFor } from '@/components/TargetSize';
 import {
   cancelWasmCompression,
   compressVideoWasm,
@@ -29,6 +30,8 @@ const INITIAL_SNAPSHOT: CompressionProgressSnapshot = {
   elapsedMs: 0,
   encodeElapsedMs: null,
 };
+
+const TARGET_STORAGE_KEY = 'squik-target-mb';
 
 type JobKind = 'compress' | 'merge' | 'trim';
 
@@ -58,6 +61,27 @@ export default function SquishApp() {
   // How much of the encoder (~25 MB, first visit only) has downloaded, 0 to 1.
   const [encoderLoaded, setEncoderLoaded] = useState(0);
   const [jobKind, setJobKind] = useState<JobKind>('compress');
+  // The size every job aims under: 200 MB unless the user locks another.
+  // Remembered in this browser only, as a convenience.
+  const [targetMb, setTargetMb] = useState(DEFAULT_TARGET_MB);
+  useEffect(() => {
+    try {
+      const saved = Number(localStorage.getItem(TARGET_STORAGE_KEY));
+      if (Number.isInteger(saved) && saved > 0) setTargetMb(saved);
+    } catch {
+      // Storage can be unavailable; the default stands.
+    }
+  }, []);
+  const changeTarget = (mb: number) => {
+    setTargetMb(mb);
+    try {
+      if (mb === DEFAULT_TARGET_MB) localStorage.removeItem(TARGET_STORAGE_KEY);
+      else localStorage.setItem(TARGET_STORAGE_KEY, String(mb));
+    } catch {
+      // Not remembered, still used for this visit.
+    }
+  };
+  const maxOutputBytes = capBytesFor(targetMb);
   // Files and ranges the card opens with: the cancelled job's, else none.
   const [draft, setDraft] = useState<SelectorDraft | undefined>(undefined);
   const lastJobRef = useRef<JobInput | null>(null);
@@ -159,9 +183,8 @@ export default function SquishApp() {
       setStatus(AppStatus.ERROR);
       setErrorMessage(message);
       setRetryHelps(
-        !['errors.metadataReadFailed', 'errors.tooLargeToFit', 'errors.mergeMinTwo'].some(
-          (key) => t(key) === message,
-        ),
+        !(err instanceof OutputTooLargeError) &&
+          !['errors.metadataReadFailed', 'errors.mergeMinTwo'].some((key) => t(key) === message),
       );
     } else {
       setDraft(draftFor(lastJobRef.current));
@@ -191,6 +214,7 @@ export default function SquishApp() {
       const compression = await compressVideoWasm(file, {
         onLoadProgress: (ratio) => handleEncoderLoad(session, ratio),
         onProgress: (snap) => handleProgress(session, snap),
+        maxOutputBytes,
       });
       await finishJob(session, compression);
     } catch (err) {
@@ -220,6 +244,7 @@ export default function SquishApp() {
       const compression = await mergeAndCompressVideosWasm(files, {
         onLoadProgress: (ratio) => handleEncoderLoad(session, ratio),
         onProgress: (snap) => handleProgress(session, snap),
+        maxOutputBytes,
       });
       await finishJob(session, compression);
     } catch (err) {
@@ -244,6 +269,7 @@ export default function SquishApp() {
       const compression = await trimAndCompressVideosWasm(file, deleteSegments, {
         onLoadProgress: (ratio) => handleEncoderLoad(session, ratio),
         onProgress: (snap) => handleProgress(session, snap),
+        maxOutputBytes,
       });
       await finishJob(session, compression);
     } catch (err) {
@@ -276,6 +302,8 @@ export default function SquishApp() {
         onVideoSelected={startCompression}
         onMergeAndCompress={startMergeAndCompress}
         onTrimAndCompress={startTrimAndCompress}
+        targetMb={targetMb}
+        onTargetChange={changeTarget}
         disabled={false}
         initialMode={jobKind}
         initialDraft={draft}
@@ -285,6 +313,8 @@ export default function SquishApp() {
     content = (
       <CompressionStatus
         filename={metadata.name}
+        targetMb={targetMb}
+        maxOutputBytes={maxOutputBytes ?? MAX_OUTPUT_BYTES}
         progressSnap={progressSnap}
         jobStartedAt={jobStartedAtRef.current ?? Date.now()}
         encodeStartedAt={encodeStartedAtRef.current}
@@ -297,7 +327,7 @@ export default function SquishApp() {
       />
     );
   } else if (status === AppStatus.DONE && result) {
-    content = <CompressionSuccess result={result} job={jobKind} onReset={reset} />;
+    content = <CompressionSuccess result={result} job={jobKind} targetMb={targetMb} onReset={reset} />;
   } else if (status === AppStatus.ERROR) {
     content = (
       <CompressionError

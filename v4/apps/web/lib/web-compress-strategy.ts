@@ -1,5 +1,6 @@
 /**
- * Web compression — target ~190 MB (cap 200 MB), balanced speed vs quality.
+ * Web compression — target 95% of the cap (190 MB under the default 200 MB),
+ * balanced speed vs quality.
  */
 
 import {
@@ -8,6 +9,7 @@ import {
   adjustBitrateForOvershoot,
   calculateTargetBitrates,
   mapAttemptProgress,
+  targetBytesForCap,
   type BitrateCalculation,
   type EncodePass,
 } from '@/lib/squish-core';
@@ -28,25 +30,34 @@ function estimateOutputBytes(blueprint: BitrateCalculation, durationSeconds: num
   return ((blueprint.videoBitrateBps + blueprint.audioBitrateBps) * safeDuration) / 8;
 }
 
-export function blueprintForWebPass(passIndex: number, durationSeconds: number): BitrateCalculation {
+export function blueprintForWebPass(
+  passIndex: number,
+  durationSeconds: number,
+  maxOutputBytes = MAX_OUTPUT_BYTES,
+): BitrateCalculation {
   const pass = WEB_DEGRADATION_PASSES[passIndex] ?? WEB_DEGRADATION_PASSES.at(-1)!;
   return calculateTargetBitrates(
     durationSeconds,
     pass.removeAudio,
     pass.bitrateMultiplier,
     pass.maxDimensionOverride,
+    targetBytesForCap(maxOutputBytes),
   );
 }
 
 /**
- * Pick the best tier that should hit under 200 MB in one pass, with a speed
+ * Pick the best tier that should hit under the cap in one pass, with a speed
  * bias for large sources so WASM does not waste time on a full-res first encode.
  */
-export function estimateWebStartPassIndex(durationSeconds: number, sourceSizeBytes: number): number {
+export function estimateWebStartPassIndex(
+  durationSeconds: number,
+  sourceSizeBytes: number,
+  maxOutputBytes = MAX_OUTPUT_BYTES,
+): number {
   let tier = WEB_DEGRADATION_PASSES.length - 1;
   for (let t = 0; t < WEB_DEGRADATION_PASSES.length; t++) {
-    const blueprint = blueprintForWebPass(t, durationSeconds);
-    if (estimateOutputBytes(blueprint, durationSeconds) <= MAX_OUTPUT_BYTES) {
+    const blueprint = blueprintForWebPass(t, durationSeconds, maxOutputBytes);
+    if (estimateOutputBytes(blueprint, durationSeconds) <= maxOutputBytes) {
       tier = t;
       break;
     }

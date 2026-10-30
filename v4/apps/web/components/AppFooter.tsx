@@ -24,7 +24,7 @@ export default function AppFooter() {
       </a>
       {/* Shown on every screen, a running job's too, where the promise matters most. */}
       <p className="app-site-footer-credit">
-        <MaterialIcon name="lock" size={16} />
+        <MaterialIcon name="lock" size={14} />
         {t('landing.privacyNote')}
       </p>
     </footer>

@@ -20,8 +20,8 @@ export function calculateTargetBitrates(
   removeAudio: boolean,
   bitrateMultiplier = 1,
   maxDimensionOverride?: number,
+  targetSizeInBytes = TARGET_SIZE_MB * 1024 * 1024,
 ): BitrateCalculation {
-  const targetSizeInBytes = TARGET_SIZE_MB * 1024 * 1024;
 
   if (!durationInSeconds || durationInSeconds <= 0) {
     return {

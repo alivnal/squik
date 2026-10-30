@@ -11,6 +11,7 @@ import { formatBytes, type WebCompressionResult } from '@/lib/squish-core';
 import { formatElapsed } from '@/lib/compress-progress';
 import { nativeOutput } from '@/lib/platform';
 import MaterialIcon from './MaterialIcon';
+import PixelText from './PixelText';
 import PanelMascot from './mascot/PanelMascot';
 import ShareTargets from './ShareTargets';
 import SquikHero from './SquikHero';
@@ -25,13 +26,15 @@ interface CompressionSuccessProps {
   result: WebCompressionResult;
   /** The finished job, which picks the title, the copy and the diorama. */
   job?: Job;
+  /** The size the job aimed under, in MB. */
+  targetMb: number;
   onReset: () => void;
 }
 
 type Stat = { label: string; value: string; className?: string };
 
-export default function CompressionSuccess({ result, job = 'compress', onReset }: CompressionSuccessProps) {
-  const { t } = useTranslation();
+export default function CompressionSuccess({ result, job = 'compress', targetMb, onReset }: CompressionSuccessProps) {
+  const { t, i18n } = useTranslation();
   const [save, setSave] = useState<SaveState>({ status: 'asking' });
   const askedFor = useRef<string | null>(null);
 
@@ -60,19 +63,19 @@ export default function CompressionSuccess({ result, job = 'compress', onReset }
   const outcome = job === 'compress' && result.skippedEncode ? 'fits' : job;
   const description =
     outcome === 'merge'
-      ? t('success.description.merge', { count: result.clipCount ?? 2 })
+      ? t('success.description.merge', { count: result.clipCount ?? 2, limit: targetMb })
       : outcome === 'trim'
-        ? t('success.description.trim', { count: result.trimSegmentCount ?? 1 })
-        : t(`success.description.${outcome}`);
+        ? t('success.description.trim', { count: result.trimSegmentCount ?? 1, limit: targetMb })
+        : t(`success.description.${outcome}`, { limit: targetMb });
 
   const { originalSize, compressedSize } = result;
   const stats: Stat[] = [];
   if (compressedSize === originalSize) {
-    stats.push({ label: t('success.size'), value: formatBytes(compressedSize) });
-    stats.push({ label: t('success.limit'), value: t('common.mbLimit') });
+    stats.push({ label: t('success.size'), value: formatBytes(compressedSize, 1, i18n.language) });
+    stats.push({ label: t('success.limit'), value: `${targetMb} MB` });
   } else {
-    stats.push({ label: t('success.original'), value: formatBytes(originalSize) });
-    stats.push({ label: t('success.newSize'), value: formatBytes(compressedSize), className: 'text-accent' });
+    stats.push({ label: t('success.original'), value: formatBytes(originalSize, 1, i18n.language) });
+    stats.push({ label: t('success.newSize'), value: formatBytes(compressedSize, 1, i18n.language), className: 'text-accent' });
     // Trim and merge can come out larger than what went in; report that as it
     // is rather than clamping it to a 0% saving.
     const change = originalSize > 0 ? Math.round((Math.abs(originalSize - compressedSize) / originalSize) * 100) : 0;
@@ -99,10 +102,15 @@ export default function CompressionSuccess({ result, job = 'compress', onReset }
               <PanelMascot variant="confetti" size="xl" />
             </div>
 
-            <h1 tabIndex={-1} className="text-display font-semibold tracking-[-0.01em] text-balance text-ink mb-space-2">
-              {t(`success.title.${outcome}.before`)}{' '}
-              <span className="text-success">{t(`success.title.${outcome}.accent`)}</span>
-              {t(`success.title.${outcome}.after`)}
+            <h1 tabIndex={-1} className="text-display font-semibold text-ink mb-space-4">
+              <PixelText
+                className="pixel-display"
+                parts={[
+                  { text: `${t(`success.title.${outcome}.before`)} ` },
+                  { text: t(`success.title.${outcome}.accent`, { limit: targetMb }), className: 'text-success' },
+                  { text: t(`success.title.${outcome}.after`) },
+                ]}
+              />
             </h1>
             <p className="success-description text-body-sm text-muted text-pretty mb-space-6 max-w-md mx-auto">
               {description}

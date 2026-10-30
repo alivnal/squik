@@ -1,9 +1,18 @@
 import type { TrimSegment, VideoProbeMetadata } from '../../../../v4/apps/web/lib/squish-core';
 
-export type NativeJob =
+/** Every job takes an optional size cap in bytes: 200 MB when omitted, at least 1 MB. */
+export type NativeJob = (
   | { kind: 'compress'; path: string }
   | { kind: 'merge'; paths: string[] }
-  | { kind: 'trim'; path: string; deleteSegments: TrimSegment[] };
+  | { kind: 'trim'; path: string; deleteSegments: TrimSegment[] }
+) & { maxOutputBytes?: number };
+
+/**
+ * Start of the error a job throws when its output cannot get under the cap.
+ * Only the message crosses IPC, so the renderer recognises it by this text and
+ * shows the page's own translated message instead.
+ */
+export const TOO_LARGE_PREFIX = 'This video cannot be compressed below';
 
 /** Encoder progress from the main process; the renderer maps it to phases. */
 export interface NativeJobProgress {

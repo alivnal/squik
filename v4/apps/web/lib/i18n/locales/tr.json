@@ -8,22 +8,21 @@
     "name": "Squik"
   },
   "meta": {
-    "description": "Videolarını 200 MB altında sıkıştır, birleştir ve kırp — tamamen tarayıcında."
+    "description": "Videolarını 200 MB altında sıkıştır, birleştir ve kırp — tamamen tarayıcında."
   },
   "common": {
     "compress": "Sıkıştır",
     "merge": "Birleştir",
     "trim": "Kırp",
     "tryAgain": "Tekrar dene",
-    "targetUnderMb": "Hedef: 200 MB altı",
-    "originalTarget": "Orijinal: {{size}} · Hedef: 200 MB altı",
-    "mbLimit": "200 MB",
+    "targetUnderMb": "Hedef: {{limit}} MB altı",
+    "originalTarget": "Orijinal: {{size}} · Hedef: {{limit}} MB altı",
     "trimAndCompress": "Kırp ve sıkıştır",
     "changeFiles": "Dosyaları değiştir",
     "original": "Orijinal: {{size}}"
   },
   "landing": {
-    "compressHeadline": "Videolar 200 MB altında",
+    "compressHeadline": "Videolar {{limit}} MB altında",
     "mergeHeadline": "Kliplerini tek videoda birleştir",
     "trimHeadline": "Gereksiz bölümleri çıkar",
     "tools": "Video araçları",
@@ -31,8 +30,8 @@
     "mergeSubtitleAfter": "Seçtiğin klipleri tek videoda birleştir.",
     "trimSubtitleAfter": "Çıkarmak istediğin bölümleri seç, gerisini koru.",
     "dropAnywhere": "Başlamak için videonu bırak",
-    "browseMultiple": "veya birden fazla klip seç (MP4, MOV, WebM, MKV)",
-    "browseSingle": "veya dosya seç (MP4, MOV, WebM, MKV)",
+    "browseMultiple": "veya birden fazla klip seç",
+    "browseSingle": "veya dosya seç",
     "privacyNote": "Videon bu cihazdan hiç çıkmaz.",
     "drop": {
       "compress": "Sıkıştırmak için video bırak",
@@ -44,7 +43,8 @@
       "merge": "Birleştirmek için klip seç",
       "trim": "Kırpmak için video seç"
     },
-    "promise": "200 MB altı · cihazından çıkmaz"
+    "promise": "Cihazından çıkmaz",
+    "formats": "MP4 · MOV · WebM · MKV"
   },
   "trim": {
     "pickVideoFirst": "Önce bir video seç.",
@@ -93,10 +93,10 @@
       "merge": "Birleştirme başarısız",
       "trim": "Kırpma başarısız"
     },
-    "tooLargeToFit": "Bu video 200 MB altına sığmayacak kadar uzun ya da büyük. Daha kısa bir klip ya da daha düşük çözünürlüklü bir kaynak dene.",
+    "tooLargeToFit": "Bu video seçilen boyuta sığmayacak kadar uzun ya da büyük. Daha büyük bir boyut, daha kısa bir klip ya da daha düşük çözünürlüklü bir kaynak dene.",
     "unreadableFile": "{{name}} okunamadı. Dosya bozuk ya da burada açılamayan bir biçimde olabilir.",
     "unreadableClip": "{{name}} okunamadı. Kalanları birleştirmek için onu kaldır.",
-    "encoderDownloadFailed": "Kodlayıcı (~25 MB) indirilemedi. Bağlantını kontrol edip tekrar dene.",
+    "encoderDownloadFailed": "Kodlayıcı (~25 MB) indirilemedi. Bağlantını kontrol edip tekrar dene.",
     "trimLengthUnknown": "{{name}} için süre okunamadı, bu yüzden burada kırpılamıyor. Sıkıştırma ve birleştirme bu dosyayla yine çalışır."
   },
   "a11y": {
@@ -124,7 +124,7 @@
     "compressingVideo": "Video sıkıştırılıyor…",
     "elapsed": "Geçen süre {{time}}",
     "encoding": "Kodlama {{time}}",
-    "wasmHint": "İlk ziyarette ~25 MB kodlayıcı kodu indirilir.",
+    "wasmHint": "İlk ziyarette ~25 MB kodlayıcı kodu indirilir.",
     "keepTabOpen": "Bu sekmeyi açık tut — ilerleme işin her aşamasını takip eder.",
     "keepWindowOpen": "Bu pencereyi açık tut — ilerleme işin her aşamasını takip eder.",
     "cancel": "İptal et",
@@ -154,7 +154,7 @@
       },
       "fits": {
         "before": "Zaten",
-        "accent": "200 MB altında",
+        "accent": "{{limit}} MB altında",
         "after": ""
       },
       "merge": {
@@ -169,12 +169,12 @@
       }
     },
     "description": {
-      "compress": "Paylaşmaya hazır: 200 MB sınırına sığıyor.",
+      "compress": "Paylaşmaya hazır: {{limit}} MB altına sığıyor.",
       "fits": "Zaten sığıyordu, bu yüzden dokunulmadı: aynı dosya, tam kalite.",
-      "merge_one": "{{count}} klip, 200 MB altında tek videoya dönüştürüldü.",
-      "merge_other": "{{count}} klip, 200 MB altında tek videoda birleştirildi.",
-      "trim_one": "1 bölüm çıkarıldı. Video 200 MB altında.",
-      "trim_other": "{{count}} bölüm çıkarıldı. Video 200 MB altında."
+      "merge_one": "{{count}} klip, {{limit}} MB altında tek videoya dönüştürüldü.",
+      "merge_other": "{{count}} klip, {{limit}} MB altında tek videoda birleştirildi.",
+      "trim_one": "1 bölüm çıkarıldı. Video {{limit}} MB altında.",
+      "trim_other": "{{count}} bölüm çıkarıldı. Video {{limit}} MB altında."
     },
     "size": "Boyut",
     "limit": "Sınır",
@@ -203,5 +203,15 @@
   },
   "footer": {
     "text": "<channel>Squik</channel> ile <heart/> yapıldı"
+  },
+  "target": {
+    "under": "{{size}} MB altı",
+    "buttonLabel": "Hedef boyut: {{size}} MB altı. Değiştir",
+    "title": "Hedef boyut",
+    "presets": "Boyutlar",
+    "custom": "Kendi boyutun",
+    "apply": "Kullan",
+    "note": "Boyut küçüldükçe kalite düşer; çok küçük boyutlarda görüntü de küçülür.",
+    "short": "{{size}} MB"
   }
 }

@@ -23,6 +23,7 @@ const ICON_PATHS: Record<string, string> = {
   close: 'm18 6-12 12M6 6l12 12',
   dark_mode: 'M20.2 15.6A8.5 8.5 0 0 1 8.4 3.8 8.5 8.5 0 1 0 20.2 15.6Z',
   download: 'M12 3v12m0 0 5-5m-5 5-5-5M5 19h14',
+  expand_more: 'm6 9 6 6 6-6',
   light_mode: 'M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',
   folder_open: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H7.4a2 2 0 0 0-1.9 1.4L3 19V7Zm0 12 2.5-7.6A2 2 0 0 1 7.4 10H21l-2.6 7.6a2 2 0 0 1-1.9 1.4H3Z',
   lock: 'M6 10h12a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2Zm2 0V7a4 4 0 1 1 8 0v3m-4 4v2',

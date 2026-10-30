@@ -6,9 +6,12 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import {
-  MAX_OUTPUT_BYTES,
   CompressionCancelledError,
+  OutputTooLargeError,
+  canFitUnderCap,
+  formatBytes,
   proportionalSizeCeiling,
+  resolveMaxOutputBytes,
   type BitrateCalculation,
   type TrimSegment,
   type VideoProbeMetadata,
@@ -32,8 +35,19 @@ import {
   type CompressionProgressSnapshot,
 } from './compress-progress';
 
-function t(key: string): string {
-  return getI18nInstance().t(key);
+function t(key: string, params?: Record<string, string>): string {
+  return getI18nInstance().t(key, params);
+}
+
+/**
+ * The output cannot get under the cap. The size is offered to the message as
+ * {{size}}; the copy may use it or not.
+ */
+function tooLargeToFit(maxOutputBytes: number): OutputTooLargeError {
+  return new OutputTooLargeError(
+    t('errors.tooLargeToFit', { size: formatBytes(maxOutputBytes) }),
+    maxOutputBytes,
+  );
 }
 import { ENCODER_LABEL } from './platform';
 
@@ -230,6 +244,7 @@ async function compressFromWasmFs(
     trimSegmentCount?: number;
     skipEncodeMaxBytes?: number;
     forceEncode?: boolean;
+    maxOutputBytes?: number;
   },
 ): Promise<WebCompressionResult> {
   const {
@@ -240,6 +255,7 @@ async function compressFromWasmFs(
     skipEncodeMaxBytes,
     forceEncode = false,
   } = options ?? {};
+  const maxOutputBytes = resolveMaxOutputBytes(options?.maxOutputBytes);
 
   const filename = outputFilename ?? `${basenameNoExt(metadata.name)}_compressed.mp4`;
   const sourceSize = originalSize ?? metadata.size;
@@ -247,7 +263,7 @@ async function compressFromWasmFs(
   const withinSkipCeiling =
     skipEncodeMaxBytes === undefined || metadata.size <= skipEncodeMaxBytes;
 
-  if (!forceEncode && metadata.size <= MAX_OUTPUT_BYTES && withinSkipCeiling) {
+  if (!forceEncode && metadata.size <= maxOutputBytes && withinSkipCeiling) {
     jobProgress.finish();
     const bytes = await readWasmFileBytes(ffmpeg, inputName);
     const blob = new Blob([bytes], { type: 'video/mp4' });
@@ -269,11 +285,15 @@ async function compressFromWasmFs(
   }
 
   if (isCancelled(session)) throw new CompressionCancelledError();
+  // Web tiers always keep sound, so its floor counts here.
+  if (!canFitUnderCap(metadata.duration, maxOutputBytes, hasAudio)) {
+    throw tooLargeToFit(maxOutputBytes);
+  }
 
-  const startTierIndex = estimateWebStartPassIndex(metadata.duration, sourceSize);
+  const startTierIndex = estimateWebStartPassIndex(metadata.duration, sourceSize, maxOutputBytes);
   let tierIndex = startTierIndex;
   let bitrateRetriesLeft = WEB_MAX_BITRATE_RETRIES;
-  let blueprint = blueprintForWebPass(tierIndex, metadata.duration);
+  let blueprint = blueprintForWebPass(tierIndex, metadata.duration, maxOutputBytes);
   let attemptIndex = 0;
   let totalEncodeMs = 0;
   jobProgress.setEncodeAttempts(maxWebCompressionAttempts(startTierIndex));
@@ -319,7 +339,7 @@ async function compressFromWasmFs(
       console.warn(
         `[Squish] FFmpeg ran out of memory; retrying with compression tier ${tierIndex + 1}.`,
       );
-      blueprint = blueprintForWebPass(tierIndex, metadata.duration);
+      blueprint = blueprintForWebPass(tierIndex, metadata.duration, maxOutputBytes);
       bitrateRetriesLeft = WEB_MAX_BITRATE_RETRIES;
       continue;
     }
@@ -330,7 +350,7 @@ async function compressFromWasmFs(
     const bytes = await readWasmFileBytes(ffmpeg, WASM_OUTPUT_NAME);
     const blob = new Blob([bytes], { type: 'video/mp4' });
 
-    if (blob.size < MAX_OUTPUT_BYTES) {
+    if (blob.size < maxOutputBytes) {
       jobProgress.finish();
       const totalTimeMs = jobProgress.getTotalElapsedMs();
       console.info(
@@ -354,7 +374,7 @@ async function compressFromWasmFs(
     }
 
     if (bitrateRetriesLeft > 0) {
-      blueprint = adjustBitrateForOvershoot(blueprint, blob.size);
+      blueprint = adjustBitrateForOvershoot(blueprint, blob.size, maxOutputBytes);
       bitrateRetriesLeft--;
       continue;
     }
@@ -362,10 +382,10 @@ async function compressFromWasmFs(
     bitrateRetriesLeft = WEB_MAX_BITRATE_RETRIES;
     tierIndex++;
     if (tierIndex >= WEB_DEGRADATION_PASSES.length) break;
-    blueprint = blueprintForWebPass(tierIndex, metadata.duration);
+    blueprint = blueprintForWebPass(tierIndex, metadata.duration, maxOutputBytes);
   }
 
-  throw new Error(t('errors.tooLargeToFit'));
+  throw tooLargeToFit(maxOutputBytes);
 }
 
 function isMemoryPressure(error: FfmpegEncodeError): boolean {
@@ -463,6 +483,7 @@ async function compressFileWithFfmpeg(
     clipCount?: number;
     trimSegmentCount?: number;
     skipEncodeMaxBytes?: number;
+    maxOutputBytes?: number;
   },
 ): Promise<WebCompressionResult> {
   const {
@@ -473,6 +494,7 @@ async function compressFileWithFfmpeg(
     trimSegmentCount,
     skipEncodeMaxBytes,
   } = options ?? {};
+  const maxOutputBytes = resolveMaxOutputBytes(options?.maxOutputBytes);
 
   const basename = basenameNoExt(file.name);
   const filename = outputFilename ?? `${basename}_compressed.mp4`;
@@ -481,7 +503,7 @@ async function compressFileWithFfmpeg(
   const withinSkipCeiling =
     skipEncodeMaxBytes === undefined || metadata.size <= skipEncodeMaxBytes;
 
-  if (metadata.size <= MAX_OUTPUT_BYTES && withinSkipCeiling) {
+  if (metadata.size <= maxOutputBytes && withinSkipCeiling) {
     jobProgress.finish();
     const outputUrl = URL.createObjectURL(file);
     // The original file goes back untouched, so it keeps its own extension, as
@@ -501,6 +523,12 @@ async function compressFileWithFfmpeg(
       encodeTimeMs: 0,
       totalTimeMs: jobProgress.getTotalElapsedMs(),
     };
+  }
+
+  // Whether there is sound is not known before FFmpeg loads, so this counts
+  // the video floor alone; compressFromWasmFs checks again with the audio.
+  if (!canFitUnderCap(metadata.duration, maxOutputBytes, false)) {
+    throw tooLargeToFit(maxOutputBytes);
   }
 
   jobProgress.enterPhase('loading', 0);
@@ -584,6 +612,7 @@ async function compressFileWithFfmpeg(
         clipCount,
         trimSegmentCount,
         skipEncodeMaxBytes,
+        maxOutputBytes,
       },
     );
   } finally {
@@ -599,10 +628,13 @@ export async function compressVideoWasm(
   options?: {
     onProgress?: (snapshot: CompressionProgressSnapshot) => void;
     onLoadProgress?: (progress: number) => void;
+    /** Hard cap in bytes the output must stay under; 200 MB when omitted, at least 1 MB. */
+    maxOutputBytes?: number;
   },
 ): Promise<WebCompressionResult> {
   const session = activeSession;
   const { onProgress, onLoadProgress } = options ?? {};
+  const maxOutputBytes = resolveMaxOutputBytes(options?.maxOutputBytes);
 
   const jobProgress = new CompressJobProgress(onProgress);
   jobProgress.enterPhase('preparing', 0);
@@ -611,7 +643,10 @@ export async function compressVideoWasm(
   if (isCancelled(session)) throw new CompressionCancelledError();
   jobProgress.enterPhase('preparing', 1);
 
-  return compressFileWithFfmpeg(file, metadata, session, jobProgress, { onLoadProgress });
+  return compressFileWithFfmpeg(file, metadata, session, jobProgress, {
+    onLoadProgress,
+    maxOutputBytes,
+  });
 }
 
 export async function mergeAndCompressVideosWasm(
@@ -619,10 +654,13 @@ export async function mergeAndCompressVideosWasm(
   options?: {
     onProgress?: (snapshot: CompressionProgressSnapshot) => void;
     onLoadProgress?: (progress: number) => void;
+    /** Hard cap in bytes the output must stay under; 200 MB when omitted, at least 1 MB. */
+    maxOutputBytes?: number;
   },
 ): Promise<WebCompressionResult> {
   const session = activeSession;
   const { onProgress, onLoadProgress } = options ?? {};
+  const maxOutputBytes = resolveMaxOutputBytes(options?.maxOutputBytes);
 
   if (files.length < 2) {
     throw new Error(t('errors.mergeMinTwo'));
@@ -642,6 +680,14 @@ export async function mergeAndCompressVideosWasm(
   const merged = await mergeVideosWasm(files, {
     onLoadProgress,
     isCancelled: () => isCancelled(session),
+    // A merge is always encoded, so a cap the clips' total length cannot fit
+    // fails before the slow merge rather than after it. Unknown lengths (0) pass.
+    beforeMerge: (probes) => {
+      const totalDuration = probes.reduce((sum, probe) => sum + probe.duration, 0);
+      if (!canFitUnderCap(totalDuration, maxOutputBytes, false)) {
+        throw tooLargeToFit(maxOutputBytes);
+      }
+    },
     onProgress: (ratio) => {
       onProgress?.({
         progress: 0.04 + ratio * 0.31,
@@ -673,6 +719,7 @@ export async function mergeAndCompressVideosWasm(
         outputFilename: `${firstBasename}_merged_compressed.mp4`,
         clipCount: files.length,
         forceEncode: true,
+        maxOutputBytes,
       },
     );
 
@@ -689,10 +736,13 @@ export async function trimAndCompressVideosWasm(
   options?: {
     onProgress?: (snapshot: CompressionProgressSnapshot) => void;
     onLoadProgress?: (progress: number) => void;
+    /** Hard cap in bytes the output must stay under; 200 MB when omitted, at least 1 MB. */
+    maxOutputBytes?: number;
   },
 ): Promise<WebCompressionResult> {
   const session = activeSession;
   const { onProgress, onLoadProgress } = options ?? {};
+  const maxOutputBytes = resolveMaxOutputBytes(options?.maxOutputBytes);
 
   const sourceMeta = await probeVideoFile(file);
   if (isCancelled(session)) throw new CompressionCancelledError();
@@ -704,6 +754,18 @@ export async function trimAndCompressVideosWasm(
     totalKeepDuration,
     sourceMeta.duration,
   );
+
+  const estimatedTrimmedBytes = Math.ceil(
+    sourceMeta.size * (totalKeepDuration / Math.max(sourceMeta.duration, 0.001)),
+  );
+  // A kept part already under the cap may still be handed back as a copy, so
+  // only a part that must be encoded is held to the bitrate floors up front.
+  if (
+    estimatedTrimmedBytes > maxOutputBytes &&
+    !canFitUnderCap(totalKeepDuration, maxOutputBytes, false)
+  ) {
+    throw tooLargeToFit(maxOutputBytes);
+  }
 
   const trimStarted = Date.now();
   const basename = basenameNoExt(file.name);
@@ -748,7 +810,7 @@ export async function trimAndCompressVideosWasm(
     const withinSkipCeiling =
       hybridResult.metadata.size <= skipCeiling;
     const canSkipCompress =
-      hybridResult.metadata.size <= MAX_OUTPUT_BYTES && withinSkipCeiling;
+      hybridResult.metadata.size <= maxOutputBytes && withinSkipCeiling;
 
     if (canSkipCompress) {
       onProgress?.({
@@ -792,6 +854,7 @@ export async function trimAndCompressVideosWasm(
           outputFilename,
           trimSegmentCount: hybridResult.deleteSegmentCount,
           skipEncodeMaxBytes: skipCeiling,
+          maxOutputBytes,
         },
       );
       console.info(`[Squish] Trim+compress — hybrid ${formatElapsed(Date.now() - trimStarted)}`);
@@ -811,11 +874,8 @@ export async function trimAndCompressVideosWasm(
   } = await import('./trim-wasm');
 
   const inputName = `trim_source${extFromName(file.name)}`;
-  const estimatedTrimmedBytes = Math.ceil(
-    sourceMeta.size * (totalKeepDuration / Math.max(sourceMeta.duration, 0.001)),
-  );
   const needsCompress =
-    estimatedTrimmedBytes > skipCeiling || estimatedTrimmedBytes > MAX_OUTPUT_BYTES;
+    estimatedTrimmedBytes > skipCeiling || estimatedTrimmedBytes > maxOutputBytes;
 
   try {
     onProgress?.({
@@ -859,10 +919,14 @@ export async function trimAndCompressVideosWasm(
         onProgress?.(scaleProgress(snap, 0.30, 0.70));
       });
 
-      const startTierIndex = estimateWebStartPassIndex(totalKeepDuration, sourceMeta.size);
+      const startTierIndex = estimateWebStartPassIndex(
+        totalKeepDuration,
+        sourceMeta.size,
+        maxOutputBytes,
+      );
       let tierIndex = startTierIndex;
       let bitrateRetriesLeft = WEB_MAX_BITRATE_RETRIES;
-      let blueprint = blueprintForWebPass(tierIndex, totalKeepDuration);
+      let blueprint = blueprintForWebPass(tierIndex, totalKeepDuration, maxOutputBytes);
       let attemptIndex = 0;
       let totalEncodeMs = 0;
       compressReporter.setEncodeAttempts(maxWebCompressionAttempts(startTierIndex));
@@ -895,7 +959,7 @@ export async function trimAndCompressVideosWasm(
         const bytes = await readWasmFileBytes(ffmpeg, WASM_OUTPUT_NAME);
         const blob = new Blob([bytes], { type: 'video/mp4' });
 
-        if (blob.size < MAX_OUTPUT_BYTES) {
+        if (blob.size < maxOutputBytes) {
           compressReporter.finish();
           const outputUrl = URL.createObjectURL(blob);
           return {
@@ -914,7 +978,7 @@ export async function trimAndCompressVideosWasm(
         }
 
         if (bitrateRetriesLeft > 0) {
-          blueprint = adjustBitrateForOvershoot(blueprint, blob.size);
+          blueprint = adjustBitrateForOvershoot(blueprint, blob.size, maxOutputBytes);
           bitrateRetriesLeft--;
           continue;
         }
@@ -922,10 +986,10 @@ export async function trimAndCompressVideosWasm(
         bitrateRetriesLeft = WEB_MAX_BITRATE_RETRIES;
         tierIndex++;
         if (tierIndex >= WEB_DEGRADATION_PASSES.length) break;
-        blueprint = blueprintForWebPass(tierIndex, totalKeepDuration);
+        blueprint = blueprintForWebPass(tierIndex, totalKeepDuration, maxOutputBytes);
       }
 
-      throw new Error(t('errors.tooLargeToFit'));
+      throw tooLargeToFit(maxOutputBytes);
     }
 
     const trimResult = await trimVideoInFfmpeg(ffmpeg, inputName, sourceMeta, deleteSegments, {
@@ -936,7 +1000,7 @@ export async function trimAndCompressVideosWasm(
     if (isCancelled(session)) throw new CompressionCancelledError();
 
     const withinSkipCeiling = trimResult.metadata.size <= skipCeiling;
-    if (trimResult.metadata.size <= MAX_OUTPUT_BYTES && withinSkipCeiling) {
+    if (trimResult.metadata.size <= maxOutputBytes && withinSkipCeiling) {
       const bytes = await readWasmFileBytes(ffmpeg, trimResult.outputName);
       const blob = new Blob([bytes], { type: 'video/mp4' });
       const outputUrl = URL.createObjectURL(blob);
@@ -971,6 +1035,7 @@ export async function trimAndCompressVideosWasm(
         outputFilename,
         trimSegmentCount: trimResult.deleteSegmentCount,
         skipEncodeMaxBytes: skipCeiling,
+        maxOutputBytes,
       },
     );
 

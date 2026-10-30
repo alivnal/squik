@@ -1,5 +1,11 @@
-export { TARGET_SIZE_MB, MAX_OUTPUT_BYTES } from './constants';
-export { CompressionCancelledError } from './errors';
+export {
+  TARGET_SIZE_MB,
+  MAX_OUTPUT_BYTES,
+  MIN_OUTPUT_BYTES,
+  resolveMaxOutputBytes,
+  targetBytesForCap,
+} from './constants';
+export { CompressionCancelledError, OutputTooLargeError } from './errors';
 export {
   AppStatus,
   type VideoProbeMetadata,
@@ -18,6 +24,10 @@ export {
 export {
   MAX_BITRATE_RETRIES,
   BITRATE_SAFETY_FACTOR,
+  MIN_VIDEO_BITRATE_BPS,
+  MIN_AUDIO_BITRATE_BPS,
+  minimumOutputBytes,
+  canFitUnderCap,
   estimateStartPassIndex,
   blueprintForDegradationPass,
   adjustBitrateForOvershoot,

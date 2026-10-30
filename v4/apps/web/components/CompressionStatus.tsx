@@ -7,9 +7,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MAX_OUTPUT_BYTES, formatBytes } from '@/lib/squish-core';
+import { formatBytes } from '@/lib/squish-core';
 import FileName from './FileName';
 import MaterialIcon from './MaterialIcon';
+import PixelText from './PixelText';
+import { PixelDots } from './PixelLoaders';
 import BeaverCompressionScene from './mascot/BeaverCompressionScene';
 import SquikHero from './SquikHero';
 import {
@@ -37,6 +39,10 @@ interface CompressionStatusProps {
   encodeStartedAt: number | null;
   originalSize?: number;
   wasmLoading?: boolean;
+  /** The size the job aims under, in MB. */
+  targetMb: number;
+  /** The byte cap behind it, to tell whether the source is over it. */
+  maxOutputBytes: number;
   /** Share of the encoder download done, 0 to 1, while wasmLoading. */
   encoderLoaded?: number;
   phase?: CompressionPhase;
@@ -52,12 +58,14 @@ export default function CompressionStatus({
   encodeStartedAt,
   originalSize,
   wasmLoading = false,
+  targetMb,
+  maxOutputBytes,
   encoderLoaded = 0,
   phase = 'compressing',
   job = 'compress',
   onCancel,
 }: CompressionStatusProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, tick] = useState(0);
 
   useEffect(() => {
@@ -123,12 +131,12 @@ export default function CompressionStatus({
               <FileName name={filename} className="max-w-[min(100%,260px)]" />
             </h1>
             <p className="mt-space-1 text-body-sm leading-5 text-muted">
-              {/* The 200 MB target only means something when the source is over it. */}
+              {/* The target only means something when the source is over it. */}
               {originalSize
-                ? originalSize > MAX_OUTPUT_BYTES
-                  ? t('common.originalTarget', { size: formatBytes(originalSize) })
-                  : t('common.original', { size: formatBytes(originalSize) })
-                : t('common.targetUnderMb')}
+                ? originalSize > maxOutputBytes
+                  ? t('common.originalTarget', { size: formatBytes(originalSize, 1, i18n.language), limit: targetMb })
+                  : t('common.original', { size: formatBytes(originalSize, 1, i18n.language) })
+                : t('common.targetUnderMb', { limit: targetMb })}
             </p>
           </PanelHeader>
 
@@ -147,8 +155,9 @@ export default function CompressionStatus({
             </div>
 
             <div className="status-details mt-space-6 text-center w-full">
-              <p className="text-body font-semibold text-accent" aria-hidden="true">
-                {phaseTitle}
+              <p className="status-phase text-accent" aria-hidden="true">
+                {wasmLoading && <PixelDots />}
+                <PixelText parts={phaseTitle} waiting />
               </p>
               <p className="sr-only" aria-live="polite">
                 {phaseName}

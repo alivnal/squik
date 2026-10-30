@@ -7,15 +7,18 @@ import {
   MAX_OUTPUT_BYTES,
   adjustBitrateForOvershoot,
   blueprintForDegradationPass,
+  canFitUnderCap,
   deleteSegmentsToKeepSegments,
+  formatBytes,
   mergeTrimSegments,
+  resolveMaxOutputBytes,
   validateDeleteSegments,
   type BitrateCalculation,
   type TrimSegment,
   type VideoProbeMetadata,
 } from '../../../../v4/apps/web/lib/squish-core';
 import { DEGRADATION_PASSES } from '../../../../v4/apps/web/lib/squish-core/bitrate';
-import type { NativeJob, NativeJobProgress } from './contracts';
+import { TOO_LARGE_PREFIX, type NativeJob, type NativeJobProgress } from './contracts';
 
 export interface ProbeResult extends VideoProbeMetadata {
   /** Stream index of the main picture (cover art is skipped). */
@@ -81,6 +84,7 @@ const MERGE_MAX_DIMENSION = 1920;
 const MAX_OUTPUT_DIMENSION = 1920;
 const MERGE_FPS = 30;
 // One encode attempt at a time plus the previous one's file during the size check.
+// Sized for the default cap: a smaller cap needs less, and it is only a guard.
 const REQUIRED_FREE_BYTES = 2 * MAX_OUTPUT_BYTES + 100 * 1024 * 1024;
 const KILL_GRACE_MS = 3000;
 const MIN_CAPPED_VIDEO_BPS = 300_000;
@@ -174,12 +178,13 @@ export class FfmpegJobs {
   async run(job: NativeJob, outputPath: string, report: ProgressReporter): Promise<JobOutput> {
     this.cancelled = false;
     report({ stage: 'preparing', ratio: 0 });
+    const maxOutputBytes = resolveMaxOutputBytes(job.maxOutputBytes);
 
     if (job.kind === 'compress') {
       const probe = await this.probe(job.path);
       const extension = extname(job.path);
       const base = basename(job.path, extension);
-      if (probe.size <= MAX_OUTPUT_BYTES) {
+      if (probe.size <= maxOutputBytes) {
         return {
           path: job.path,
           filename: `${base}_compressed${extension}`,
@@ -189,7 +194,7 @@ export class FfmpegJobs {
           encodeTimeMs: 0,
         };
       }
-      return this.encode(compressSource(job.path, probe), outputPath, `${base}_compressed.mp4`, report);
+      return this.encode(compressSource(job.path, probe), outputPath, `${base}_compressed.mp4`, maxOutputBytes, report);
     }
 
     if (job.kind === 'trim') {
@@ -200,8 +205,8 @@ export class FfmpegJobs {
       const keeps = deleteSegmentsToKeepSegments(deleteSegments, probe.duration);
       const base = basename(job.path, extname(job.path));
       const filename = `${base}_trimmed_compressed.mp4`;
-      const output = (await this.trimByCopy(job.path, probe, keeps, outputPath, filename, report))
-        ?? (await this.encode(trimSource(job.path, probe, keeps), outputPath, filename, report));
+      const output = (await this.trimByCopy(job.path, probe, keeps, outputPath, filename, maxOutputBytes, report))
+        ?? (await this.encode(trimSource(job.path, probe, keeps), outputPath, filename, maxOutputBytes, report));
       return { ...output, originalSize: probe.size, trimSegmentCount: deleteSegments.length };
     }
 
@@ -214,8 +219,8 @@ export class FfmpegJobs {
     }
     const base = basename(job.paths[0], extname(job.paths[0]));
     const filename = `${base}_merged_compressed.mp4`;
-    const copied = await this.mergeByCopy(job.paths, probes, outputPath, filename, report);
-    const output = copied ?? (await this.encode(mergeSource(job.paths, probes), outputPath, filename, report));
+    const copied = await this.mergeByCopy(job.paths, probes, outputPath, filename, maxOutputBytes, report);
+    const output = copied ?? (await this.encode(mergeSource(job.paths, probes), outputPath, filename, maxOutputBytes, report));
     return { ...output, clipCount: job.paths.length };
   }
 
@@ -229,14 +234,15 @@ export class FfmpegJobs {
     probes: ProbeResult[],
     outputPath: string,
     filename: string,
+    maxOutputBytes: number,
     report: ProgressReporter,
   ): Promise<JobOutput | null> {
     const totalBytes = probes.reduce((sum, probe) => sum + probe.size, 0);
     const signatures = new Set(probes.map((probe) => probe.copySignature));
     const copyableCodec = COPYABLE_VIDEO.includes(probes[0].videoCodec);
-    if (signatures.size !== 1 || !copyableCodec || totalBytes > MAX_OUTPUT_BYTES * 0.98) return null;
+    if (signatures.size !== 1 || !copyableCodec || totalBytes > maxOutputBytes * 0.98) return null;
     const expectedDuration = probes.reduce((sum, probe) => sum + probe.duration, 0);
-    return this.copyJoin(paths.map((path) => ({ path })), expectedDuration, totalBytes, outputPath, filename, report);
+    return this.copyJoin(paths.map((path) => ({ path })), expectedDuration, totalBytes, outputPath, filename, maxOutputBytes, report);
   }
 
   /**
@@ -252,12 +258,13 @@ export class FfmpegJobs {
     keeps: TrimSegment[],
     outputPath: string,
     filename: string,
+    maxOutputBytes: number,
     report: ProgressReporter,
   ): Promise<JobOutput | null> {
     const keptSeconds = keeps.reduce((sum, keep) => sum + keep.endSec - keep.startSec, 0);
     const copyable = COPYABLE_VIDEO.includes(probe.videoCodec) &&
       (probe.audioCodec === null || COPYABLE_AUDIO.includes(probe.audioCodec));
-    if (!copyable || probe.size * (keptSeconds / probe.duration) > MAX_OUTPUT_BYTES * 0.98) return null;
+    if (!copyable || probe.size * (keptSeconds / probe.duration) > maxOutputBytes * 0.98) return null;
 
     const parts: CopyPart[] = [];
     for (const { startSec, endSec } of keeps) {
@@ -266,7 +273,7 @@ export class FfmpegJobs {
       parts.push({ path, inpoint, outpoint: endSec < probe.duration ? endSec : undefined });
     }
     const expectedDuration = parts.reduce((sum, part) => sum + (part.outpoint ?? probe.duration) - (part.inpoint ?? 0), 0);
-    const output = await this.copyJoin(parts, expectedDuration, probe.size, outputPath, filename, report);
+    const output = await this.copyJoin(parts, expectedDuration, probe.size, outputPath, filename, maxOutputBytes, report);
     return output && { ...output, originalSize: probe.size };
   }
 
@@ -300,6 +307,7 @@ export class FfmpegJobs {
     originalSize: number,
     outputPath: string,
     filename: string,
+    maxOutputBytes: number,
     report: ProgressReporter,
   ): Promise<JobOutput | null> {
     await this.assertFreeSpace(outputPath);
@@ -324,7 +332,7 @@ export class FfmpegJobs {
       );
       const joined = await this.probe(outputPath);
       const tolerance = 0.5 + 0.25 * parts.length;
-      if (joined.size > MAX_OUTPUT_BYTES || Math.abs(joined.duration - expectedDuration) > tolerance) {
+      if (joined.size > maxOutputBytes || Math.abs(joined.duration - expectedDuration) > tolerance) {
         await rm(outputPath, { force: true });
         return null;
       }
@@ -351,8 +359,14 @@ export class FfmpegJobs {
     source: EncodeSource,
     outputPath: string,
     filename: string,
+    maxOutputBytes: number,
     report: ProgressReporter,
   ): Promise<JobOutput> {
+    // The last tier drops the sound, so the video floor alone decides whether
+    // any tier can fit; if not, say so now instead of after every tier.
+    if (!canFitUnderCap(source.durationSeconds, maxOutputBytes, false)) {
+      throw new Error(tooLargeMessage(maxOutputBytes));
+    }
     await this.assertFreeSpace(outputPath);
     // Most jobs fit on the first try, so it fills most of the bar; a retry
     // fills most of what is left instead of the bar sitting still.
@@ -370,7 +384,7 @@ export class FfmpegJobs {
       ...plan,
       videoBitrateBps: Math.max(MIN_CAPPED_VIDEO_BPS, Math.min(plan.videoBitrateBps, sourceBps - plan.audioBitrateBps)),
     });
-    let blueprint = capToSource(blueprintForDegradationPass(tier, source.durationSeconds));
+    let blueprint = capToSource(blueprintForDegradationPass(tier, source.durationSeconds, maxOutputBytes));
     let encodeTimeMs = 0;
     let hardwareDecode = source.inputs.some((input) => input.hardwareDecode);
 
@@ -401,7 +415,7 @@ export class FfmpegJobs {
         progressDone = progress;
         report({ stage: 'finalizing', ratio: 0.5 });
         const { size } = await stat(outputPath);
-        if (size <= MAX_OUTPUT_BYTES) {
+        if (size <= maxOutputBytes) {
           return {
             path: outputPath,
             filename,
@@ -413,15 +427,17 @@ export class FfmpegJobs {
         }
 
         if (retriesLeft > 0) {
-          blueprint = adjustBitrateForOvershoot(blueprint, size);
+          blueprint = adjustBitrateForOvershoot(blueprint, size, maxOutputBytes);
           retriesLeft -= 1;
           continue;
         }
         tier += 1;
         retriesLeft = MAX_BITRATE_RETRIES;
-        if (tier < DEGRADATION_PASSES.length) blueprint = capToSource(blueprintForDegradationPass(tier, source.durationSeconds));
+        if (tier < DEGRADATION_PASSES.length) {
+          blueprint = capToSource(blueprintForDegradationPass(tier, source.durationSeconds, maxOutputBytes));
+        }
       }
-      throw new Error('This video cannot be compressed below 200 MB. Try a shorter video or a lower-resolution source.');
+      throw new Error(tooLargeMessage(maxOutputBytes));
     } catch (error) {
       await rm(outputPath, { force: true });
       throw error;
@@ -516,6 +532,10 @@ export class FfmpegJobs {
   private throwIfCancelled(): void {
     if (this.cancelled) throw new CompressionCancelledError();
   }
+}
+
+function tooLargeMessage(maxOutputBytes: number): string {
+  return `${TOO_LARGE_PREFIX} ${formatBytes(maxOutputBytes)}. Try a shorter video or a lower-resolution source.`;
 }
 
 function friendlyFfmpegError(stderr: string, code: number | null): string {

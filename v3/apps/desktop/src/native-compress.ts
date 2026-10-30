@@ -5,7 +5,9 @@
 
 import {
   CompressionCancelledError,
+  OutputTooLargeError,
   formatBytes,
+  resolveMaxOutputBytes,
   type TrimSegment,
   type VideoProbeMetadata,
   type WebCompressionResult,
@@ -13,7 +15,7 @@ import {
 import { CompressJobProgress, type CompressionProgressSnapshot } from '@/lib/compress-progress';
 import { getI18nInstance } from '@squish/i18n';
 import { ENCODER_LABEL } from './platform';
-import type { NativeJob, NativeJobProgress } from '../electron/contracts';
+import { TOO_LARGE_PREFIX, type NativeJob, type NativeJobProgress } from '../electron/contracts';
 
 export type { CompressionProgressSnapshot };
 
@@ -21,6 +23,8 @@ export type { CompressionProgressSnapshot };
 interface JobOptions {
   onProgress?: (snapshot: CompressionProgressSnapshot) => void;
   onLoadProgress?: (progress: number) => void;
+  /** Hard cap in bytes the output must stay under; 200 MB when omitted, at least 1 MB. */
+  maxOutputBytes?: number;
 }
 
 function desktop() {
@@ -36,10 +40,19 @@ function pathFor(file: File): string {
 
 // ipcRenderer.invoke wraps main-process errors as
 // "Error invoking remote method 'x': Error: <message>".
-function unwrapIpcError(error: unknown): Error {
+function unwrapIpcError(error: unknown, maxOutputBytes?: number): Error {
   if (!(error instanceof Error)) return new Error(String(error));
   const message = error.message.replace(/^Error invoking remote method '[^']+': (?:\w*Error: )?/, '');
-  return /cancel/i.test(message) ? new CompressionCancelledError() : new Error(message);
+  if (/cancel/i.test(message)) return new CompressionCancelledError();
+  // The same error, in the same words, as the web engine gives for a cap it cannot reach.
+  if (message.startsWith(TOO_LARGE_PREFIX)) {
+    const cap = resolveMaxOutputBytes(maxOutputBytes);
+    return new OutputTooLargeError(
+      getI18nInstance().t('errors.tooLargeToFit', { size: formatBytes(cap) }),
+      cap,
+    );
+  }
+  return new Error(message);
 }
 
 export async function probeVideoFile(file: File): Promise<VideoProbeMetadata> {
@@ -98,14 +111,14 @@ async function runNativeJob(job: NativeJob, options?: JobOptions): Promise<WebCo
       outputBlob: new Blob(),
     };
   } catch (error) {
-    throw unwrapIpcError(error);
+    throw unwrapIpcError(error, job.maxOutputBytes);
   } finally {
     stopListening();
   }
 }
 
 export async function compressVideoWasm(file: File, options?: JobOptions): Promise<WebCompressionResult> {
-  return runNativeJob({ kind: 'compress', path: pathFor(file) }, options);
+  return runNativeJob({ kind: 'compress', path: pathFor(file), maxOutputBytes: options?.maxOutputBytes }, options);
 }
 
 export async function mergeAndCompressVideosWasm(
@@ -113,7 +126,10 @@ export async function mergeAndCompressVideosWasm(
   options?: JobOptions,
 ): Promise<WebCompressionResult> {
   if (files.length < 2) throw new Error(getI18nInstance().t('errors.mergeMinTwo'));
-  return runNativeJob({ kind: 'merge', paths: files.map(pathFor) }, options);
+  return runNativeJob(
+    { kind: 'merge', paths: files.map(pathFor), maxOutputBytes: options?.maxOutputBytes },
+    options,
+  );
 }
 
 export async function trimAndCompressVideosWasm(
@@ -121,5 +137,8 @@ export async function trimAndCompressVideosWasm(
   deleteSegments: TrimSegment[],
   options?: JobOptions,
 ): Promise<WebCompressionResult> {
-  return runNativeJob({ kind: 'trim', path: pathFor(file), deleteSegments }, options);
+  return runNativeJob(
+    { kind: 'trim', path: pathFor(file), deleteSegments, maxOutputBytes: options?.maxOutputBytes },
+    options,
+  );
 }

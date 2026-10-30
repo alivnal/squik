@@ -1,17 +1,19 @@
 @import "tailwindcss";
 @import "../components/iso/iso.css";
 /* Bundled, not fetched: the desktop app works offline and must render the
-   same on macOS and Windows. Rubik loads only the scripts a page uses
-   (latin and latin-ext for English and Turkish); Silkscreen is latin only,
-   since it sets just the wordmark and the progress figure. */
-@import "@fontsource-variable/rubik";
+   same on macOS and Windows. Bricolage loads only the scripts a page uses
+   (latin and latin-ext for English and Turkish), with its optical-size axis,
+   so captions open up and titles tighten on their own; Silkscreen is latin
+   400 only, since it sets just the progress figure (the wordmark is drawn,
+   see SquikLogo). */
+@import "@fontsource-variable/bricolage-grotesque/opsz.css";
 @import "@fontsource/silkscreen/latin-400.css";
-@import "@fontsource/silkscreen/latin-700.css";
 
 @theme {
-  /* Rubik's soft corners for every word of the interface; Silkscreen, a
-     pixel face, for the two places that speak in the diorama's voice. */
-  --font-sans: "Rubik Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Bricolage's ink traps and uneven widths give every word of the interface
+     a hand in it; Silkscreen, a pixel face, for the progress figure, in the
+     diorama's voice. */
+  --font-sans: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-pixel: "Silkscreen", ui-monospace, monospace;
 
   /* Light mode palette */
@@ -364,13 +366,14 @@ body {
   flex: none;
 }
 
-/* The wordmark in the pixel face, at a multiple of its 8px grid. */
+/* The drawn wordmark: 9 grid rows at 4px each, 3px on narrow phones, always
+   whole pixels per grid unit so the edges stay sharp. */
 .squik-brand-name {
+  display: block;
+  flex: none;
+  width: auto;
+  height: 36px;
   color: var(--color-ink);
-  font-family: var(--font-pixel);
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .squik-brand-compact .squik-brand-mark {
@@ -464,6 +467,9 @@ body {
 }
 
 .drop-zone:focus-visible,
+.target-size-button:focus-visible,
+.target-size-preset:focus-visible,
+.target-size-input:focus-visible,
 .app-header-brand:focus-visible,
 .theme-toggle:focus-visible,
 .language-picker-btn:focus-visible,
@@ -834,6 +840,7 @@ h1[tabindex="-1"]:focus {
   color: var(--color-muted);
   font: inherit;
   font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
   font-weight: 600;
   cursor: pointer;
   transition: color 0.15s ease, background-color 0.15s ease;
@@ -856,13 +863,46 @@ h1[tabindex="-1"]:focus {
   opacity: 0.55;
 }
 
+/* The zone and its foot share one grid cell: the foot sits over the zone's
+   bottom edge without being a positioned box, so the size panel still
+   anchors to the wrap. */
 .drop-zone-wrap {
   position: relative;
+  display: grid;
   min-width: 0;
 }
 
-.drop-zone {
+.drop-zone-wrap > .drop-zone,
+.drop-zone-wrap > .drop-zone-foot {
+  grid-area: 1 / 1;
+}
+
+/* Room at the bottom for the foot row. */
+.drop-zone-wrap > .drop-zone {
+  padding-bottom: 3.75rem;
+}
+
+.drop-zone-foot {
+  z-index: 1;
+  display: flex;
+  align-self: end;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+  min-width: 0;
+  padding: 0.75rem 0.75rem 0.75rem 1rem;
+  /* Clicks on the promise fall through to the zone; only the button takes them. */
+  pointer-events: none;
+}
+
+.drop-zone-foot > .target-size-button {
+  pointer-events: auto;
+}
+
+/* Rhythm by relation: the icon stands apart, the title and its browse line
+   pair tight, the formats sit a step below as a footnote. */
+.drop-zone {
+  gap: 0;
   width: 100%;
   padding: 2rem;
   color: var(--color-ink);
@@ -871,15 +911,45 @@ h1[tabindex="-1"]:focus {
 }
 
 .drop-zone-title {
-  font-size: var(--text-title);
-  font-weight: 600;
-  line-height: var(--text-title--line-height);
-  text-wrap: balance;
+  --pixel-unit: 3px;
+  margin-top: 1rem;
 }
 
 .drop-zone-browse {
+  margin-top: 0.25rem;
   color: var(--color-muted);
   font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
+}
+
+/* Drawn lettering (PixelText): words wrap like text, a grid unit apart
+   per --pixel-unit, always whole pixels so every square stays crisp. Accents
+   over capitals draw above the word's box, so lines keep their spacing. */
+.pixel-text {
+  --pixel-unit: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: calc(var(--pixel-unit) * 3) calc(var(--pixel-unit) * 3);
+}
+
+.pixel-text-word {
+  flex: none;
+  width: calc(var(--pixel-width) * var(--pixel-unit));
+  height: calc(9 * var(--pixel-unit));
+  overflow: visible;
+}
+
+/* The result headline, the one big line of the job. */
+.pixel-display {
+  --pixel-unit: 4px;
+}
+
+@media (max-width: 520px) {
+  .pixel-display {
+    --pixel-unit: 3px;
+  }
 }
 
 .drop-zone-title-touch {
@@ -893,17 +963,35 @@ h1[tabindex="-1"]:focus {
   }
 
   .drop-zone-title-touch {
-    display: inline;
+    display: flex;
   }
+}
+
+.drop-zone-formats {
+  color: var(--color-muted);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  margin-top: 0.5rem;
 }
 
 .drop-zone-promise {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   gap: 0.375rem;
-  margin-top: 0.25rem;
   color: var(--color-muted);
   font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
+  white-space: nowrap;
+}
+
+.drop-zone-promise svg {
+  flex: none;
+}
+
+.drop-zone-promise-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .drop-overlay {
@@ -992,6 +1080,7 @@ h1[tabindex="-1"]:focus {
   margin: 0;
   color: var(--color-ink);
   font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
   font-weight: 600;
 }
 
@@ -999,9 +1088,9 @@ h1[tabindex="-1"]:focus {
   flex: none;
   color: var(--color-accent);
   font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
 }
 
 .merge-tile-foot {
@@ -1015,6 +1104,7 @@ h1[tabindex="-1"]:focus {
   overflow: hidden;
   color: var(--color-muted);
   font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1118,6 +1208,7 @@ h1[tabindex="-1"]:focus {
   margin: 0;
   color: var(--color-ink);
   font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
   font-weight: 600;
 }
 
@@ -1150,6 +1241,7 @@ h1[tabindex="-1"]:focus {
 .trim-length-value {
   color: var(--color-ink);
   font-size: var(--text-title);
+  line-height: var(--text-title--line-height);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -1157,6 +1249,7 @@ h1[tabindex="-1"]:focus {
 .trim-caption {
   color: var(--color-muted);
   font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
   font-weight: 600;
 }
 
@@ -1193,19 +1286,29 @@ h1[tabindex="-1"]:focus {
 
 .tray-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
 
-/* The summary wraps; the button keeps its label on one line. */
+/* The summary takes the row while it has room for a readable line; below
+   that the controls drop to their own row, right-aligned, instead of crushing
+   it. The size and the button travel together. */
 .tray-footer .tray-summary {
-  flex: 1;
+  flex: 1 1 14rem;
   min-width: 0;
 }
 
-.tray-footer .pixel-btn {
+.tray-actions {
+  display: flex;
   flex: none;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.tray-actions .pixel-btn {
   white-space: nowrap;
 }
 
@@ -1216,7 +1319,7 @@ h1[tabindex="-1"]:focus {
   line-height: var(--text-body-sm--line-height);
   font-variant-numeric: tabular-nums;
   text-wrap: pretty;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* A clip that can't be read: red edge, and its size slot says so. */
@@ -1239,7 +1342,7 @@ h1[tabindex="-1"]:focus {
 }
 
 .tray-summary.is-error {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 /* The whole video; the sections that go sit on it in the error colour. */
@@ -1295,14 +1398,196 @@ h1[tabindex="-1"]:focus {
   font-size: var(--text-body-sm);
   line-height: var(--text-body-sm--line-height);
   text-wrap: pretty;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
-/* Laid over the foot of the drop zone, where the browse and promise lines
-   step aside (keeping their space, so nothing moves); its tint is opaque,
-   so the dashed border doesn't show through. */
+/* Target size: a quiet button showing the size jobs aim under (accent and
+   locked once the user picks their own), and a panel laid over the card's
+   lower part, so choosing never changes the card's height. */
+.target-size-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.target-size-button:hover:not(:disabled),
+.target-size-button[aria-expanded="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.target-size-button.is-custom {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.target-size-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.target-size-panel {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-card-edge);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.target-size-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.target-size-title {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--text-title);
+  line-height: var(--text-title--line-height);
+  font-weight: 600;
+}
+
+.target-size-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.target-size-preset {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.75rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--color-gray-100);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.target-size-preset:hover {
+  background: var(--color-gray-200);
+}
+
+.target-size-preset[aria-pressed="true"] {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  color: var(--color-accent);
+}
+
+.target-size-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.target-size-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--color-muted);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  font-weight: 600;
+}
+
+.target-size-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 16px, or iOS zooms the page when the box takes focus. */
+.target-size-input {
+  width: 6.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.target-size-input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+/* The unit reads as part of the number: same size, quieter colour. */
+.target-size-unit {
+  color: var(--color-muted);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+}
+
+/* "Under 25 MB" on a wide card; on a narrow one, just "25 MB", with the
+   lock and accent carrying the meaning. */
+.target-size-short {
+  display: none;
+}
+
+@media (max-width: 420px) {
+  .target-size-long {
+    display: none;
+  }
+
+  .target-size-short {
+    display: inline;
+  }
+}
+
+.target-size-field .pixel-btn {
+  margin-left: auto;
+}
+
+.target-size-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  text-wrap: pretty;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .target-size-button {
+    min-height: 2.5rem;
+  }
+}
+
+/* Laid over the lower part of the drop zone, where the browse and formats
+   lines and the foot row step aside (keeping their space, so nothing moves);
+   its tint is opaque, so the dashed border doesn't show through. */
 .drop-zone.has-error .drop-zone-browse,
-.drop-zone.has-error .drop-zone-promise {
+.drop-zone.has-error .drop-zone-formats,
+.drop-zone.has-error ~ .drop-zone-foot {
   visibility: hidden;
 }
 
@@ -1354,10 +1639,178 @@ h1[tabindex="-1"]:focus {
   }
 }
 
-.progress-ring-circle {
-  transition: stroke-dashoffset 0.35s cubic-bezier(0.65, 0, 0.45, 1);
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
+/* Pixel loaders (PixelLoaders.tsx): square cells that move in whole steps,
+   never slides, in the wordmark's voice. */
+
+/* The progress ring: 16 cells a side with the corners cut. A cell is 5/6 of
+   its slot, so the gaps read as pixels at any ring size. */
+.pixel-ring {
+  position: absolute;
+  inset: 0;
+}
+
+.pixel-ring-cell {
+  position: absolute;
+  width: calc(100% / 16 * 5 / 6);
+  height: calc(100% / 16 * 5 / 6);
+  background: var(--color-gray-200);
+}
+
+.pixel-ring-cell.is-on {
+  background: var(--color-accent);
+}
+
+/* The next cell blinks while it waits its turn. */
+.pixel-ring-cell.is-head {
+  animation: pixel-ring-head 1s steps(1) infinite;
+}
+
+@keyframes pixel-ring-head {
+  50% {
+    background: var(--color-accent);
+  }
+}
+
+/* Done: the whole ring flashes green twice. */
+.pixel-ring.is-done .pixel-ring-cell {
+  animation: pixel-ring-done 0.6s steps(1) 2;
+}
+
+@keyframes pixel-ring-done {
+  50% {
+    background: var(--color-success);
+  }
+}
+
+.pixel-ring-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* Busy with no share to show: the eight outer cells of a 3 x 3 grid light
+   in turn, two fading behind the head, ten steps a second. */
+.pixel-dots {
+  --dot: 4px;
+  display: inline-grid;
+  flex: none;
+  grid-template-columns: repeat(3, var(--dot));
+  gap: calc(var(--dot) / 2);
+  vertical-align: middle;
+}
+
+.pixel-dots-lg {
+  --dot: 14px;
+  /* 3 x 14 + 2 x 5 = 52px, the icon's box, so nothing moves when they swap. */
+  gap: 5px;
+}
+
+.pixel-dots > i {
+  width: var(--dot);
+  height: var(--dot);
+  background: var(--color-gray-200);
+}
+
+.pixel-dots > i.is-path {
+  animation: pixel-dots-chase 0.8s steps(1) infinite;
+  animation-delay: calc(var(--dot-step) * 0.1s - 0.8s);
+}
+
+@keyframes pixel-dots-chase {
+  0% {
+    background: var(--color-accent);
+  }
+  12.5% {
+    background: color-mix(in srgb, var(--color-accent) 55%, var(--color-gray-200));
+  }
+  25% {
+    background: color-mix(in srgb, var(--color-accent) 25%, var(--color-gray-200));
+  }
+  37.5%,
+  100% {
+    background: var(--color-gray-200);
+  }
+}
+
+/* The phase line: dots, when shown, sit beside the drawn words. */
+.status-phase {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Waiting dots, in the alphabet's dot: one, two, three, then none, three
+   steps a second. */
+.pixel-wait {
+  flex: none;
+  width: calc(5 * var(--pixel-unit, 2px));
+  height: calc(9 * var(--pixel-unit, 2px));
+  overflow: visible;
+}
+
+.pixel-wait rect {
+  animation: 1.33s steps(1) infinite;
+}
+
+.pixel-wait rect:nth-child(1) {
+  animation-name: pixel-wait-1;
+}
+
+.pixel-wait rect:nth-child(2) {
+  animation-name: pixel-wait-2;
+}
+
+.pixel-wait rect:nth-child(3) {
+  animation-name: pixel-wait-3;
+}
+
+@keyframes pixel-wait-1 {
+  0% { opacity: 1; }
+  75% { opacity: 0; }
+}
+
+@keyframes pixel-wait-2 {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  75% { opacity: 0; }
+}
+
+@keyframes pixel-wait-3 {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  75% { opacity: 0; }
+}
+
+.pixel-text-tail {
+  display: flex;
+  flex: none;
+  gap: var(--pixel-unit);
+}
+
+/* The trim length while it's read: dots on the value's baseline. */
+.trim-length-wait {
+  --pixel-unit: 3px;
+  display: block;
+}
+
+/* Still under reduced motion: the ring keeps filling (it is the progress)
+   but nothing blinks; the dots hold a still pattern; waiting shows "…". */
+@media (prefers-reduced-motion: reduce) {
+  .pixel-ring-cell.is-head,
+  .pixel-ring.is-done .pixel-ring-cell,
+  .pixel-wait rect {
+    animation: none;
+  }
+
+  .pixel-dots > i.is-path {
+    animation: none;
+  }
+
+  .pixel-dots > i:nth-child(odd) {
+    background: color-mix(in srgb, var(--color-accent) 55%, var(--color-gray-200));
+  }
 }
 
 .pixel-btn {
@@ -1365,6 +1818,8 @@ h1[tabindex="-1"]:focus {
   background: var(--color-accent);
   font-weight: 600;
   font-size: 1rem;
+  /* 20px, tighter than body's 24: a single-line label, centred in a 44px
+     target, wants the tighter box. */
   line-height: 1.25rem;
   min-height: 2.75rem;
   border: none;
@@ -1679,10 +2134,10 @@ h1[tabindex="-1"]:focus {
 }
 
 /* Narrow phones: one grid step down, so the wordmark clears the header
-   controls; the 400px block below takes it one more. */
+   controls. */
 @media (max-width: 520px) {
   .squik-brand-name {
-    font-size: 1.5rem;
+    height: 27px;
   }
 }
 
@@ -1694,10 +2149,6 @@ h1[tabindex="-1"]:focus {
   .squik-brand-mark {
     width: 2.125rem;
     height: 2.125rem;
-  }
-
-  .squik-brand-name {
-    font-size: 1rem;
   }
 
   .app-header-controls {
