@@ -214,6 +214,7 @@
     "custom": "Your own size",
     "apply": "Use",
     "note": "Smaller sizes mean lower quality, and very small ones also shrink the picture.",
-    "short": "{{size}} MB"
+    "short": "{{size}} MB",
+    "slider": "Size slider"
   }
 }

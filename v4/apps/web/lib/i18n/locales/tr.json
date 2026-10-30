@@ -212,6 +212,7 @@
     "custom": "Kendi boyutun",
     "apply": "Kullan",
     "note": "Boyut küçüldükçe kalite düşer; çok küçük boyutlarda görüntü de küçülür.",
-    "short": "{{size}} MB"
+    "short": "{{size}} MB",
+    "slider": "Boyut kaydırıcısı"
   }
 }

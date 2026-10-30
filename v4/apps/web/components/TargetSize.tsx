@@ -24,6 +24,28 @@ const PRESETS_MB = [10, 25, 50, 100, DEFAULT_TARGET_MB];
 const MIN_TARGET_MB = 1;
 const MAX_TARGET_MB = 4000;
 
+/*
+ * The slider runs on a log scale, so 1 to 50 MB, where most limits sit, gets
+ * as much travel as 50 to 4000. It snaps to round sizes; the box beside it
+ * takes any whole size.
+ */
+const SLIDER_STEPS = 1000;
+const LOG_RANGE = Math.log(MAX_TARGET_MB / MIN_TARGET_MB);
+
+function roundSize(mb: number): number {
+  const step = mb < 100 ? 1 : mb < 1000 ? 5 : 50;
+  return Math.min(MAX_TARGET_MB, Math.max(MIN_TARGET_MB, Math.round(mb / step) * step));
+}
+
+function sliderToMb(position: number): number {
+  return roundSize(MIN_TARGET_MB * Math.exp((position / SLIDER_STEPS) * LOG_RANGE));
+}
+
+function mbToSlider(mb: number): number {
+  const clamped = Math.min(MAX_TARGET_MB, Math.max(MIN_TARGET_MB, mb));
+  return Math.round((Math.log(clamped / MIN_TARGET_MB) / LOG_RANGE) * SLIDER_STEPS);
+}
+
 interface TargetSizeProps {
   /** The size every job aims under, in MB. */
   valueMb: number;
@@ -77,6 +99,7 @@ export default function TargetSize({ valueMb, onChange, disabled = false, classN
 
   const draftMb = Number(draft);
   const draftValid = Number.isInteger(draftMb) && draftMb >= MIN_TARGET_MB && draftMb <= MAX_TARGET_MB;
+  const sliderPosition = mbToSlider(draftValid ? draftMb : valueMb);
 
   const choose = (mb: number) => {
     onChange(mb);
@@ -127,10 +150,12 @@ export default function TargetSize({ valueMb, onChange, disabled = false, classN
                 key={mb}
                 type="button"
                 aria-pressed={valueMb === mb}
+                aria-label={t('target.short', { size: mb })}
                 onClick={() => choose(mb)}
                 className="target-size-preset"
               >
-                {t('target.short', { size: mb })}
+                {mb}
+                <span className="target-size-preset-unit">{'\u00a0'}MB</span>
               </button>
             ))}
           </div>
@@ -146,6 +171,18 @@ export default function TargetSize({ valueMb, onChange, disabled = false, classN
               <MaterialIcon name="lock" size={14} />
               {t('target.custom')}
             </label>
+            <input
+              type="range"
+              min={0}
+              max={SLIDER_STEPS}
+              step={1}
+              value={sliderPosition}
+              aria-label={t('target.slider')}
+              aria-valuetext={t('target.short', { size: sliderToMb(sliderPosition) })}
+              onChange={(e) => setDraft(String(sliderToMb(Number(e.target.value))))}
+              style={{ '--fill': `${(sliderPosition / SLIDER_STEPS) * 100}%` } as React.CSSProperties}
+              className="target-size-slider"
+            />
             <div className="target-size-field">
               <input
                 id={inputId}
