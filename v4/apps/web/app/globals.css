@@ -895,7 +895,8 @@ h1[tabindex="-1"]:focus {
   pointer-events: none;
 }
 
-.drop-zone-foot > .target-size-button {
+.drop-zone-foot > .target-size-button,
+.drop-zone-foot > .target-size-panel {
   pointer-events: auto;
 }
 
