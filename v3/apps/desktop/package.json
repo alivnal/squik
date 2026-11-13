@@ -1,20 +1,22 @@
 {
   "name": "@squish/desktop",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "private": true,
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
-    "build:electron": "esbuild electron/main.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-electron/main.js && node -e \"import('node:fs').then(({copyFileSync})=>copyFileSync('electron/preload.cjs','dist-electron/preload.cjs'))\"",
+    "build:electron": "esbuild electron/main.ts --bundle --platform=node --format=esm --external:electron --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=dist-electron/main.js && node -e \"import('node:fs').then(({copyFileSync})=>copyFileSync('electron/preload.cjs','dist-electron/preload.cjs'))\"",
     "build:native": "node scripts/copy-native-binaries.mjs",
     "dev": "npm run build:electron && npm run build:native && concurrently -k \"vite --port 3000\" \"wait-on http://localhost:3000 && cross-env VITE_DEV_SERVER_URL=http://localhost:3000 electron .\"",
     "build": "vite build && npm run build:electron && npm run build:native",
-    "dist": "npm run build && electron-builder",
-    "dist:mac": "npm run build && cross-env APPLE_KEYCHAIN_PROFILE=squik-notary electron-builder --mac dmg",
-    "dist:mac:arm64": "cross-env SQUIK_TARGET_ARCH=arm64 npm run build && cross-env APPLE_KEYCHAIN_PROFILE=squik-notary electron-builder --mac dmg --arm64",
-    "dist:mac:x64": "cross-env SQUIK_TARGET_ARCH=x64 npm run build && cross-env APPLE_KEYCHAIN_PROFILE=squik-notary electron-builder --mac dmg --x64",
-    "dist:win": "cross-env SQUIK_TARGET_PLATFORM=win32 SQUIK_TARGET_ARCH=x64 npm run build && electron-builder --win --x64",
-    "dist:portable": "cross-env SQUIK_TARGET_PLATFORM=win32 SQUIK_TARGET_ARCH=x64 npm run build && electron-builder --win portable --x64",
+    "dist": "npm run build && electron-builder --publish never",
+    "dist:mac": "npm run build && cross-env APPLE_KEYCHAIN_PROFILE=squik-notary electron-builder --mac dmg zip --publish never",
+    "dist:mac:arm64": "cross-env SQUIK_TARGET_ARCH=arm64 npm run build && cross-env APPLE_KEYCHAIN_PROFILE=squik-notary electron-builder --mac dmg zip --arm64 --publish never",
+    "dist:mac:x64": "cross-env SQUIK_TARGET_ARCH=x64 npm run build && cross-env APPLE_KEYCHAIN_PROFILE=squik-notary electron-builder --mac dmg zip --x64 --publish never",
+    "dist:mac:all": "npm run dist:mac:arm64 && node -e \"require('node:fs').copyFileSync('release/latest-mac.yml','release/latest-mac-arm64.yml')\" && npm run dist:mac:x64 && npm run feed:mac",
+    "feed:mac": "node scripts/merge-mac-feed.mjs",
+    "dist:win": "cross-env SQUIK_TARGET_PLATFORM=win32 SQUIK_TARGET_ARCH=x64 npm run build && electron-builder --win --x64 --publish never",
+    "dist:portable": "cross-env SQUIK_TARGET_PLATFORM=win32 SQUIK_TARGET_ARCH=x64 npm run build && electron-builder --win portable --x64 --publish never",
     "clean": "node -e \"const fs=require('fs');['dist','dist-electron','release'].forEach(d=>fs.rmSync(d,{recursive:true,force:true}))\"",
     "lint": "tsc --noEmit"
   },
@@ -35,6 +37,7 @@
     "cross-env": "^7.0.3",
     "electron": "35.7.5",
     "electron-builder": "^26.15.3",
+    "electron-updater": "^6.8.12",
     "esbuild": "^0.25.0",
     "gsap": "^3.15.0",
     "i18next": "^24.2.3",
@@ -45,7 +48,10 @@
     "wait-on": "^8.0.3"
   },
   "description": "Squik — compress and merge academic videos under 200 MB",
-  "author": "Squik",
+  "author": {
+    "name": "Ali Unal",
+    "url": "https://github.com/alivnal"
+  },
   "build": {
     "appId": "com.kunduz.squish",
     "productName": "Squik",
@@ -63,7 +69,8 @@
     "mac": {
       "category": "public.app-category.video",
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "icon": "build-resources/icon.png",
       "identity": "Ali Unal (VMDH25KKNR)",
@@ -115,6 +122,14 @@
       "artifactName": "Squik-${version}-win-${arch}-setup.${ext}",
       "shortcutName": "Squik",
       "uninstallDisplayName": "Squik"
-    }
+    },
+    "copyright": "© 2026 Ali Unal",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "alivnal",
+        "repo": "squik"
+      }
+    ]
   }
 }

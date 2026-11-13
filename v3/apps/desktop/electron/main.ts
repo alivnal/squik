@@ -10,6 +10,7 @@ import type { NativeJob, NativeJobResult } from './contracts';
 import { installApplicationMenu } from './menu';
 import { shareableCopy, shareFile } from './share';
 import { rememberWindowBounds, restoreWindowGeometry } from './window-state';
+import { startAutoUpdates } from './updater';
 
 const currentDirectory = fileURLToPath(new URL('.', import.meta.url));
 const rendererDirectory = join(currentDirectory, '../dist');
@@ -38,6 +39,8 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let mainWindow: BrowserWindow | null = null;
+/** True while an encode runs, so an update never restarts the app under it. */
+let jobRunning = false;
 const outputs = new Map<string, JobOutput>();
 /** Where the user saved results; only these may be revealed in Finder. */
 const savedPaths = new Set<string>();
@@ -156,6 +159,7 @@ async function runJob(jobId: string, job: NativeJob): Promise<NativeJobResult> {
   const started = Date.now();
   // Long encodes keep running when the Mac would otherwise idle-sleep.
   const blocker = powerSaveBlocker.start('prevent-app-suspension');
+  jobRunning = true;
   let output: JobOutput;
   try {
     output = await jobs.run(job, join(outputDirectory(), `${jobId}.mp4`), (progress) => {
@@ -169,6 +173,7 @@ async function runJob(jobId: string, job: NativeJob): Promise<NativeJobResult> {
     if (!(error instanceof CompressionCancelledError)) playFinishSound(false);
     throw error;
   } finally {
+    jobRunning = false;
     powerSaveBlocker.stop(blocker);
     mainWindow?.setProgressBar(-1);
   }
@@ -345,6 +350,7 @@ app.whenReady().then(() => {
   installApplicationMenu(() => mainWindow, Boolean(devServerUrl));
 
   createWindow();
+  startAutoUpdates(() => mainWindow, () => jobRunning);
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

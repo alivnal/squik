@@ -55,5 +55,12 @@ export function installApplicationMenu(window: () => BrowserWindow | null, isDev
   ];
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
-  app.setAboutPanelOptions({ applicationName: 'Squik', applicationVersion: app.getVersion(), credits: 'ali ünal' });
+  app.setAboutPanelOptions({
+    applicationName: 'Squik',
+    applicationVersion: app.getVersion(),
+    copyright: `© ${new Date().getFullYear()} Ali Unal`,
+    credits: 'Made by Ali Unal · https://github.com/alivnal',
+    authors: ['Ali Unal'],
+    website: 'https://github.com/alivnal',
+  });
 }
